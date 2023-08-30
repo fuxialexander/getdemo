@@ -1,10 +1,3 @@
-# Installation
-```bash
-docker pull fuxialexander/getdemo:latest
-docker run -it -v "/path/to/data:/data" --rm -p 7681:7681 fuxialexander/getdemo
-```
-The gradio interface will be available at http://127.0.0.1:7681, a sharable link will be printed in the terminal.
-
 # Data preparation
 Put the data in the following structure in the root directory of the project.
 ```bash
@@ -24,4 +17,21 @@ data
         ├── SMAD2
         ├── TAF1
         └── ZFX
+```
+
+# Installation
+```bash
+git clone --recursive git@github.com:fuxialexander/getdemo.git
+cd getdemo
+docker pull fuxialexander/getdemo:latest
+docker run -it -v "/path/to/data:/data" --rm -p 7681:7681 fuxialexander/getdemo
+```
+The gradio interface will be available at http://127.0.0.1:7681, a sharable link will be printed in the terminal.
+
+# Build
+```bash
+git clone --recursive git@github.com:fuxialexander/getdemo.git
+cd getdemo
+docker build -t getdemo .
+docker run -it -v "/path/to/data:/data" --rm -p 7681:7681 getdemo
 ```
