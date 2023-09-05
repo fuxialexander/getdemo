@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ssh \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
+RUN mkdir /data
 USER $MAMBA_USER
 
 # copy modules from local to container
@@ -35,7 +35,6 @@ RUN cd /modules/proscope &&  \
     pip3 install .
 
 WORKDIR /
-RUN mkdir /data
 
 # Make port 80 available to the world outside this container
 EXPOSE 7681
