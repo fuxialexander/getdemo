@@ -2,7 +2,7 @@
 FROM mambaorg/micromamba
 
 # Set the working directory in the container to /app
-WORKDIR /
+WORKDIR /app
 
 
 # Create a new environment using mamba with specified packages
@@ -12,33 +12,33 @@ ARG MAMBA_DOCKERFILE_ACTIVATE=1
 RUN pip3 install gradio 
 
 USER root
-
+RUN mkdir /data
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     ssh \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-RUN mkdir /data
+
 USER $MAMBA_USER
 
 # copy modules from local to container
-COPY --chown=$MAMBA_USER:$MAMBA_USER modules /modules
+COPY --chown=$MAMBA_USER:$MAMBA_USER modules /app/modules
 
 # copy modules from local to container
-COPY --chown=$MAMBA_USER:$MAMBA_USER app /app
+COPY --chown=$MAMBA_USER:$MAMBA_USER app /app/app
 
 # copy modules from local to container
 # COPY --chown=$MAMBA_USER:$MAMBA_USER data /app/data
 
 # Clone a specific git repository and install it as an editable package
-RUN cd /modules/proscope &&  \
+RUN cd modules/proscope &&  \
     pip3 install .
 
-WORKDIR /
+WORKDIR /app
 
 # Make port 80 available to the world outside this container
 EXPOSE 7681
 # Set the working directory where your app resides
 
 # Command to run the Gradio app automatically
-CMD ["python", "/app/main.py", "-p", "7681", "-s", "-d", "/data"]
+CMD ["python", "app/main.py", "-p", "7681", "-s", "-d", "/data"]
