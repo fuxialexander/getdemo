@@ -71,7 +71,7 @@ def visualize_AF2(tf_pair, a):
         gr.ErrorText("No such gene pair")
 
     a = AFPairseg(strcture_dir, fasta_dir)
-    segpair.choices = list(a.pairs_data.keys())
+    # segpair.choices = list(a.pairs_data.keys())
     fig1, ax1 = a.plot_plddt_gene1()
     fig2, ax2 = a.plot_plddt_gene2()
     fig3, ax3 = a.protein1.plot_plddt()
@@ -91,12 +91,22 @@ def update_dropdown(x, label):
     return gr.Dropdown.update(choices=x, label=label)
 
 
+def filter_gene_records(cell, str):
+    if str == '':
+        return cell.gene_annot.groupby('gene_name')[['pred', 'obs', 'accessibility']].mean().reset_index().head(5), cell
+    df = cell.gene_annot.query(f"gene_name == '{str}'").groupby('gene_name')[['pred', 'obs', 'accessibility']].mean().reset_index().head(5)
+    return df, cell
+
 def load_and_plot_celltype(celltype_name, GET_CONFIG, cell):
     celltype_id = cell_type_name_to_id[celltype_name]
     cell = GETCellType(celltype_id, GET_CONFIG)
     cell.celltype_name = celltype_name
+    # gene_name.choices = sorted(gene_exp_table.gene_name.unique()
     gene_exp_fig = cell.plotly_gene_exp()
-    return gene_exp_fig, cell
+    gene_exp_table = cell.gene_annot.groupby('gene_name')[['pred', 'obs', 'accessibility']].mean().reset_index().head(5)
+    new_gene_dropdown = update_dropdown(sorted(cell.gene_annot.gene_name.unique()), "Gene name")
+    return gene_exp_fig, gene_exp_table, new_gene_dropdown, new_gene_dropdown, cell
+    
 
 
 def plot_gene_regions(cell, gene_name, plotly=True):
@@ -139,10 +149,10 @@ if __name__ == "__main__":
         seg_pairs = gr.State([""])
         af = gr.State(None)
         cell = gr.State(None)
+        gene_names = gr.State([""])
 
         gr.Markdown(
-            """
-        # 🌟 GET: A Foundation Model of Transcription Across Human Cell Types 🌟
+            """# 🌟 GET: A Foundation Model of Transcription Across Human Cell Types 🌟
 
 Here we introduce GET, an innovative computational model aimed at understanding transcriptional regulation across 235 human fetal and adult cell types. 
 Built solely on chromatin accessibility and sequence data, GET exhibits unparalleled generalizability and accuracy in predicting gene expression, even in previously unstudied cell types. 
@@ -154,10 +164,10 @@ Overall, GET serves as a robust, generalizable framework for understanding cell 
 
 Dive deep into our live demo and experience a revolution in cellular transcription like never before. Here's what you can explore:
 
-🔍 Prediction Performance: Choose your cell type and be amazed as we unveil a vivid plot comparing observed versus forecasted gene expression levels.
-🧬 Cell-type Specific Regulatory Insights: Just pick a gene, and voilà! Revel in intricate plots revealing the cell-type specific regulatory landscapes and motifs.
-🔗 Motif Correlation & Causal Subnetworks: Engage with our intuitive heatmap to witness motif correlations. Go further - choose a motif, define your subnetwork preference, set an effect size threshold, and behold the magic unfold!
-🔬 Structural Atlas of Interactions: Step into the realm of transcription factor pairs. Experience heatmaps, pLDDT metrics, and more. And guess what? You can even download the PDB file for select segment pairs!
+- 🔍 Prediction Performance: Choose your cell type and be amazed as we unveil a vivid plot comparing observed versus forecasted gene expression levels.
+- 🧬 Cell-type Specific Regulatory Insights: Just pick a gene, and voilà! Revel in intricate plots revealing the cell-type specific regulatory landscapes and motifs.
+- 🔗 Motif Correlation & Causal Subnetworks: Engage with our intuitive heatmap to witness motif correlations. Go further - choose a motif, define your subnetwork preference, set an effect size threshold, and behold the magic unfold!
+- 🔬 Structural Atlas of Interactions: Step into the realm of transcription factor pairs. Experience heatmaps, pLDDT metrics, and more. And guess what? You can even download the PDB file for select segment pairs!
 
 Stay tuned! We're set to dazzle you further as we launch our demo on Huggingface this week. Questions, thoughts, or moments of awe? Don't hesitate to reach out!
         
@@ -179,17 +189,29 @@ This section enables you to select different cell types and generates a plot tha
                 )
                 celltype_btn = gr.Button(value="Load & plot gene expression")
                 gene_exp_plot = gr.Plot(label="Gene expression prediction vs observation")
+                with gr.Row() as row:
+                    gene_name = gr.Dropdown(value="BCL11A")
+                    # Button to trigger the filter action
+                    filter_btn = gr.Button("Filter table by gene name")
+                gene_exp_table = gr.Dataframe(
+                    datatype=["str", "number", "number", "number"],
+                    row_count=5,
+                    col_count=(4, "fixed"),
+                    label='Gene expression table',
+                    max_rows=5
+                )
+
 
             # Right column: Plot gene motifs
             with gr.Column():
                 gr.Markdown(
                     """
-## 🧬 Cell-type specific regulatory inference
+### 🧬 Cell-type specific regulatory inference
 
 In this section, you can choose a specific gene and access visualizations of its cell-type specific regulatory regions and motifs that promote gene expression. When you hover over the highlighted regions (the top 10%), you'll be able to view information about the motifs present in those regions and their corresponding scores. This feature allows for a detailed exploration of the regulatory elements influencing the expression of the selected gene.
 """
                 )
-                gene_name_for_region = gr.Textbox(
+                gene_name_for_region = gr.Dropdown(
                     label="Get important regions or motifs for gene:", value="BCL11A"
                 )
                 with gr.Row() as row:
@@ -258,6 +280,19 @@ You can download specific segment pair PDB files by clicking 'Get PDB.'
 """
         )
 
+
+        with gr.Row() as row:
+            with gr.Column():
+                tf_pairs = gr.Dropdown(label="TF pair", choices=gene_pairs)
+                tf_pairs_btn = gr.Button(value="Load & Plot")
+                heatmap = gr.Plot(label="Heatmap")
+                
+            with gr.Column():
+                segpair = gr.Dropdown(label="Seg pair")
+                segpair_btn = gr.Button(value="Get PDB")
+                pdb_html = gr.HTML(label="PDB HTML")
+                pdb_file = gr.File(label="Download PDB")
+
         with gr.Row() as row:
             with gr.Column():
                 protein1_plddt = gr.Plot(label="Protein 1 pLDDT")
@@ -266,18 +301,6 @@ You can download specific segment pair PDB files by clicking 'Get PDB.'
                 protein2_plddt = gr.Plot(label="Protein 2 pLDDT")
                 interact_plddt2 = gr.Plot(label="Interact pLDDT 2")
                 
-        with gr.Row() as row:
-            with gr.Column():
-                tf_pairs = gr.Dropdown(label="TF pair", choices=gene_pairs)
-                tf_pairs_btn = gr.Button(value="Load & Plot")
-                heatmap = gr.Plot(label="Heatmap")
-                
-            with gr.Column():
-                segpair = gr.Dropdown(label="Seg pair", choices=seg_pairs.value)
-                segpair_btn = gr.Button(value="Get PDB")
-                pdb_html = gr.HTML(label="PDB HTML")
-                pdb_file = gr.File(label="Download PDB")
-        
         tf_pairs_btn.click(
             visualize_AF2,
             inputs=[tf_pairs, af],
@@ -297,7 +320,12 @@ You can download specific segment pair PDB files by clicking 'Get PDB.'
         celltype_btn.click(
             load_and_plot_celltype,
             inputs=[celltype_name, gr.State(GET_CONFIG), cell],
-            outputs=[gene_exp_plot, cell],
+            outputs=[gene_exp_plot, gene_exp_table, gene_name, gene_name_for_region, cell],
+        )
+        filter_btn.click(
+            filter_gene_records,
+            inputs=[cell, gene_name],
+            outputs=[gene_exp_table, cell],
         )
         region_plot_btn.click(
             plot_gene_regions,
