@@ -127,9 +127,10 @@ def plot_motif_corr(cell):
         link_method="ward",
         display_ratio=0.1,
         width=600,
-        height=500,
+        height=400,
         color_map="rdbu_r",
     )
+    fig["layout"].update(coloraxis_showscale=False)
     return fig, cell
 
 
@@ -197,7 +198,7 @@ This section allows the selection of a gene and provides plots of its cell-type 
 
         gr.Markdown(
             """
-## Motif Correlation and Causal Subnetworks
+## Motif correlation and causal subnetworks
 
 Here, you can generate a heatmap to visualize motif correlations. Alternatively, you can explore the causal subnetworks related to specific motifs by selecting the motif and the type of subnetwork you are interested in, along with a effect size threshold.
 """
