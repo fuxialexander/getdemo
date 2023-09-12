@@ -127,7 +127,7 @@ def plot_motif_corr(cell):
         link_method="ward",
         display_ratio=0.1,
         width=600,
-        height=400,
+        height=350,
         color_map="rdbu_r",
     )
     fig["layout"].update(coloraxis_showscale=False)
@@ -144,7 +144,7 @@ if __name__ == "__main__":
             """
         # GET: A Foundation Model of Transcription Across Human Cell Types
 
-        _Transcriptional regulation, involving the complex interplay between regulatory sequences and proteins, 
+        Transcriptional regulation, involving the complex interplay between regulatory sequences and proteins, 
                     directs all biological processes. Computational models of transcriptions lack generalizability 
                     to accurately extrapolate in unseen cell types and conditions. Here, we introduce GET, 
                     an interpretable foundation model, designed to uncover deep regulatory patterns across 235 human fetal and adult cell types. 
@@ -158,7 +158,7 @@ if __name__ == "__main__":
                     In particular, we show GET outperforms current models in predicting lentivirus-based massive parallel reporter assay readout with reduced input data. 
                     In fetal erythroblast, we are able to identify distant (>1Mbps) regulatory regions that were missed by previous models. 
                     In sum, we provide a generalizable and predictive cell type specific model for transcription together with catalogs of gene regulation and transcription factor interactions. 
-                    Benefit from this catalog, we are able to provide mechanistic understanding of previously unknown significance germline coding variants in disordered regions of PAX5, a lymphoma associated transcription factor._
+                    Benefit from this catalog, we are able to provide mechanistic understanding of a previously unknown significance germline coding variant in disordered regions of PAX5, a lymphoma associated transcription factor.
         """
         )
 
@@ -168,56 +168,56 @@ if __name__ == "__main__":
                 gr.Markdown(
                     """
 ## Prediction performance
-This section allows the selection of cell types and provides a plot depicting the observed versus predicted gene expression levels.
+This section allows the selection of cell types and provides a plot depicting the observed versus predicted gene expression levels. Note that cell type without observed gene expression data will show a vertical line at 0.
 """
                 )
-                with gr.Row() as row:
-                    celltype_name = gr.Dropdown(
-                        label="Cell Type", choices=avaliable_celltypes
-                    )
-                    celltype_btn = gr.Button(value="Load & Plot Gene Expression")
-                gene_exp_plot = gr.Plot(label="Gene Expression Pred vs Obs")
+                celltype_name = gr.Dropdown(
+                    label="Cell Type", choices=avaliable_celltypes, value='Fetal Astrocyte 1'
+                )
+                celltype_btn = gr.Button(value="Load & plot gene expression")
+                gene_exp_plot = gr.Plot(label="Gene expression prediction vs observation")
 
             # Right column: Plot gene motifs
             with gr.Column():
                 gr.Markdown(
                     """
 ## Cell-type specific regulatory inference
-This section allows the selection of a gene and provides plots of its cell-type specific regulatory regions and motifs.
+This section allows the selection of a gene and provides plots of its cell-type specific regulatory regions and expression-promoting motifs. Hovering over the highlighted (top 10%) regions will show the regional motifs and their score.
 """
                 )
                 gene_name_for_region = gr.Textbox(
-                    label="Get important regions or motifs for gene:"
+                    label="Get important regions or motifs for gene:", value="BCL11A"
                 )
                 with gr.Row() as row:
                     region_plot_btn = gr.Button(value="Regions")
                     motif_plot_btn = gr.Button(value="Motifs")
 
-                region_plot = gr.Plot(label="Gene Regions")
-                motif_plot = gr.Plot(label="Gene Motifs")
+                region_plot = gr.Plot(label="Important regions")
+                motif_plot = gr.Plot(label="Important motifs")
 
         gr.Markdown(
             """
 ## Motif correlation and causal subnetworks
 
-Here, you can generate a heatmap to visualize motif correlations. Alternatively, you can explore the causal subnetworks related to specific motifs by selecting the motif and the type of subnetwork you are interested in, along with a effect size threshold.
+Here, you can generate a heatmap to visualize motif correlations. You can also explore the causal subnetworks related to specific motifs by selecting the motif and the type of subnetwork you are interested in, along with a effect size threshold.
+Node size represents the mean expression value of TFs associated with the motif. Edge width represents the effect size of the interaction. Red edges represent positive effect, while blue edges represent negative effect.
 """
         )
         with gr.Row() as row:
             with gr.Column():
-                clustergram_btn = gr.Button(value="Plot Motif Correlation Heatmap")
-                clustergram_plot = gr.Plot(label="Motif Correlation")
+                clustergram_btn = gr.Button(value="Plot motif correlation heatmap")
+                clustergram_plot = gr.Plot(label="Motif correlation")
 
             # Right column: Motif subnet plot
             with gr.Column():
                 with gr.Row() as row:
                     motif_for_subnet = gr.Dropdown(
-                        label="Motif Causal Subnetwork", choices=motif.cluster_names
+                        label="Motif causal subnetwork", choices=motif.cluster_names, value='KLF/SP/2'
                     )
                     subnet_type = gr.Dropdown(
-                        label="Type",
+                        label="Interaction type",
                         choices=["neighbors", "parents", "children"],
-                        default="neighbors",
+                        value="neighbors",
                     )
                     # slider for threshold 0.01-0.2
                     subnet_threshold = gr.Slider(
@@ -234,27 +234,40 @@ Here, you can generate a heatmap to visualize motif correlations. Alternatively,
             """
 ## Structural atlas of TF-TF and TF-EP300 interactions
 
-This section allows you to explore transcription factor pairs. You can visualize various metrics such as Heatmaps and pLDDT (predicted Local Distance Difference Test) for both proteins in the interacting pair. You can also download the PDB file for specific segment pairs.
+This section allows you to explore transcription factor pairs identified in the causal network. You can visualize various metrics such as Heatmaps and pLDDT (predicted Local Distance Difference Test) for both proteins in the interacting pair. 
+The top row is the pLDDT segmentation plot for the two TF. pLDDT is a good measure of protein disorderness. We use it to identify the disordered regions of the protein.
+Each TF is splited into disordered segments and ordered segments and named numerically as ZFX_0, ZFX_1, etc. The disordered segments are labeled with red color. Annotation from Uniprot is also provided when available.
+The second row is the interaction pLDDT plot. In this plot, we performed all-against-all AlphaFold2 predictions for the segments of the two TFs and plot the pLDDT score for each segment pair in comparison to the pLDDT score of the monomer structure of the two TFs.
+If we find a region that has a higher pLDDT score than the monomer structure, we can infer that this region is stabilized by the interaction between the two TFs.
+The third row is the heatmap plot. In this plot, we plot the interaction score for each segment pair, which includes:
+- interchain min pAE: smaller is better. This is the minimum predicted AlphaFold2 pAE score between the two segments. Well-bound protein-protein interactions ususally have a low interchain pAE score.
+- mean pLDDT: larger is better. This is the mean predicted AlphaFold2 pLDDT score of the two segments, a measure of prediction confidence or (inverse-)disorderness.
+- ipTM: larger is better. This is the interaction interface TM score of the two segments, a measure of the quality of the predicted interactions produced by AlphaFold2.
+- pDockQ: larger is better. This is the pDockQ score of the two segments, which is a measure of the quality of the predicted interactions.
+You can download the PDB file for specific segment pairs by clicking the 'Get PDB' button.
 """
         )
+
         with gr.Row() as row:
             with gr.Column():
-                with gr.Row() as row:
-                    tf_pairs = gr.Dropdown(label="TF pair", choices=gene_pairs)
-                    tf_pairs_btn = gr.Button(value="Load & Plot")
-                heatmap = gr.Plot(label="Heatmap")
-                interact_plddt1 = gr.Plot(label="Interact pLDDT 1")
-                interact_plddt2 = gr.Plot(label="Interact pLDDT 2")
                 protein1_plddt = gr.Plot(label="Protein 1 pLDDT")
-                protein2_plddt = gr.Plot(label="Protein 2 pLDDT")
-
+                interact_plddt1 = gr.Plot(label="Interact pLDDT 1")
             with gr.Column():
-                with gr.Row() as row:
-                    segpair = gr.Dropdown(label="Seg pair", choices=seg_pairs.value)
-                    segpair_btn = gr.Button(value="Get PDB")
+                protein2_plddt = gr.Plot(label="Protein 2 pLDDT")
+                interact_plddt2 = gr.Plot(label="Interact pLDDT 2")
+                
+        with gr.Row() as row:
+            with gr.Column():
+                tf_pairs = gr.Dropdown(label="TF pair", choices=gene_pairs)
+                tf_pairs_btn = gr.Button(value="Load & Plot")
+                heatmap = gr.Plot(label="Heatmap")
+                
+            with gr.Column():
+                segpair = gr.Dropdown(label="Seg pair", choices=seg_pairs.value)
+                segpair_btn = gr.Button(value="Get PDB")
                 pdb_html = gr.HTML(label="PDB HTML")
                 pdb_file = gr.File(label="Download PDB")
-
+        
         tf_pairs_btn.click(
             visualize_AF2,
             inputs=[tf_pairs, af],
