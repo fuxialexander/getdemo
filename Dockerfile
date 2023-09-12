@@ -6,7 +6,8 @@ WORKDIR /app
 
 
 # Create a new environment using mamba with specified packages
-RUN micromamba install -n base -c conda-forge -c bioconda -y python=3.10 git pip biopython nglview tqdm matplotlib pandas xmlschema seaborn numpy py3Dmol 
+RUN micromamba install -n base -c conda-forge -c bioconda -y python=3.10 pip biopython nglview dash-bio tqdm matplotlib pygraphviz pandas openpyxl pyarrow python-box xmlschema seaborn numpy py3Dmol pyranges scipy pyyaml zarr numcodecs pybigwig networkx plotly pysam requests seqlogo MOODS urllib3 pyliftover gprofiler-official pyfaidx
+
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
 # Activate the environment and install additional packages via pip
 RUN pip3 install gradio 
@@ -32,6 +33,9 @@ COPY --chown=$MAMBA_USER:$MAMBA_USER app /app/app
 
 # Clone a specific git repository and install it as an editable package
 RUN cd modules/proscope &&  \
+    pip3 install .
+
+RUN cd modules/atac_rna_data_processing &&  \
     pip3 install .
 
 WORKDIR /app
