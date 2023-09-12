@@ -142,23 +142,25 @@ if __name__ == "__main__":
 
         gr.Markdown(
             """
-        # GET: A Foundation Model of Transcription Across Human Cell Types
+        # 🌟 GET: A Foundation Model of Transcription Across Human Cell Types 🌟
 
-        Transcriptional regulation, involving the complex interplay between regulatory sequences and proteins, 
-                    directs all biological processes. Computational models of transcriptions lack generalizability 
-                    to accurately extrapolate in unseen cell types and conditions. Here, we introduce GET, 
-                    an interpretable foundation model, designed to uncover deep regulatory patterns across 235 human fetal and adult cell types. 
-                    Relying exclusively on chromatin accessibility data and sequence information, GET achieves experimental-level accuracy 
-                    in predicting gene expression even in previously unseen cell types. GET showcases remarkable adaptability across new sequencing platforms and assays, 
-                    making it possible to infer regulatory activity across a broad range of cell types and conditions,
-                    and to uncover universal and cell type specific transcription factor interaction networks. 
-                    We tested its performance on prediction of chromatin regulatory activity, 
-                    inference of regulatory elements and regulators of fetal hemoglobin, 
-                    and identification of known physical interactions between transcription factors. 
-                    In particular, we show GET outperforms current models in predicting lentivirus-based massive parallel reporter assay readout with reduced input data. 
-                    In fetal erythroblast, we are able to identify distant (>1Mbps) regulatory regions that were missed by previous models. 
-                    In sum, we provide a generalizable and predictive cell type specific model for transcription together with catalogs of gene regulation and transcription factor interactions. 
-                    Benefit from this catalog, we are able to provide mechanistic understanding of a previously unknown significance germline coding variant in disordered regions of PAX5, a lymphoma associated transcription factor.
+Here we introduce GET, an innovative computational model aimed at understanding transcriptional regulation across 235 human fetal and adult cell types. 
+Built solely on chromatin accessibility and sequence data, GET exhibits unparalleled generalizability and accuracy in predicting gene expression, even in previously unstudied cell types. 
+The model adapts seamlessly across various sequencing platforms and assays, allowing inference of broad-spectrum regulatory activity. 
+We validate GET's efficacy through its superior prediction of lentivirus-based massive parallel reporter assay outcomes and its ability to identify previously elusive distant regulatory regions in fetal erythroblasts. 
+Moreover, our model reveals both universal and cell type-specific transcription factor interaction networks. 
+Utilizing this comprehensive catalog, we elucidate the functional significance of a previously unidentified germline coding variant in PAX5, a lymphoma-associated transcription factor. 
+Overall, GET serves as a robust, generalizable framework for understanding cell type-specific gene regulation and transcription factor interactions.
+
+Dive deep into our live demo and experience a revolution in cellular transcription like never before. Here's what you can explore:
+
+🔍 Prediction Performance: Choose your cell type and be amazed as we unveil a vivid plot comparing observed versus forecasted gene expression levels.
+🧬 Cell-type Specific Regulatory Insights: Just pick a gene, and voilà! Revel in intricate plots revealing the cell-type specific regulatory landscapes and motifs.
+🔗 Motif Correlation & Causal Subnetworks: Engage with our intuitive heatmap to witness motif correlations. Go further - choose a motif, define your subnetwork preference, set an effect size threshold, and behold the magic unfold!
+🔬 Structural Atlas of Interactions: Step into the realm of transcription factor pairs. Experience heatmaps, pLDDT metrics, and more. And guess what? You can even download the PDB file for select segment pairs!
+
+Stay tuned! We're set to dazzle you further as we launch our demo on Huggingface this week. Questions, thoughts, or moments of awe? Don't hesitate to reach out!
+        
         """
         )
 
@@ -167,8 +169,9 @@ if __name__ == "__main__":
             with gr.Column():
                 gr.Markdown(
                     """
-## Prediction performance
-This section allows the selection of cell types and provides a plot depicting the observed versus predicted gene expression levels. Note that cell type without observed gene expression data will show a vertical line at 0.
+## 🔍 Prediction performance
+
+This section enables you to select different cell types and generates a plot that compares observed gene expression levels to predicted ones. It's important to note that for cell types without available observed gene expression data, the plot will display a vertical line at 0, indicating the absence of empirical expression data for those particular cell types. This visualization helps assess the accuracy of gene expression predictions in the context of different cell types.
 """
                 )
                 celltype_name = gr.Dropdown(
@@ -181,8 +184,9 @@ This section allows the selection of cell types and provides a plot depicting th
             with gr.Column():
                 gr.Markdown(
                     """
-## Cell-type specific regulatory inference
-This section allows the selection of a gene and provides plots of its cell-type specific regulatory regions and expression-promoting motifs. Hovering over the highlighted (top 10%) regions will show the regional motifs and their score.
+## 🧬 Cell-type specific regulatory inference
+
+In this section, you can choose a specific gene and access visualizations of its cell-type specific regulatory regions and motifs that promote gene expression. When you hover over the highlighted regions (the top 10%), you'll be able to view information about the motifs present in those regions and their corresponding scores. This feature allows for a detailed exploration of the regulatory elements influencing the expression of the selected gene.
 """
                 )
                 gene_name_for_region = gr.Textbox(
@@ -197,10 +201,13 @@ This section allows the selection of a gene and provides plots of its cell-type 
 
         gr.Markdown(
             """
-## Motif correlation and causal subnetworks
+## 🔗 Motif correlation and causal subnetworks
 
-Here, you can generate a heatmap to visualize motif correlations. You can also explore the causal subnetworks related to specific motifs by selecting the motif and the type of subnetwork you are interested in, along with a effect size threshold.
-Node size represents the mean expression value of TFs associated with the motif. Edge width represents the effect size of the interaction. Red edges represent positive effect, while blue edges represent negative effect.
+Motif correlation, as it relates to a cell-type specific gene-by-motif matrix, signifies the examination of associations between specific DNA sequence motifs and the expression patterns of genes in a particular cell type. This analysis is grounded in the concept that a correlation between a motif and gene expression implies co-regulation of downstream target genes, suggesting functional interactions between the regulatory motif and the genes it influences.
+
+In simpler terms, when you observe a motif having a strong positive correlation with the expression of certain genes in a specific cell type, it suggests that this motif is associated with the coordinated regulation of those genes. This correlation indicates that the motif likely plays a role in controlling the activity of those genes, possibly by acting as a binding site for transcription factors or other regulatory proteins. Conversely, a negative correlation might suggest that the motif is associated with the repression of those genes.
+
+Overall, motif correlation analysis helps uncover potential regulatory relationships within a cell type by identifying motifs that are statistically linked to the expression patterns of genes. This can provide valuable insights into the functional interactions and regulatory mechanisms at play in that specific biological context.
 """
         )
         with gr.Row() as row:
@@ -232,19 +239,22 @@ Node size represents the mean expression value of TFs associated with the motif.
 
         gr.Markdown(
             """
-## Structural atlas of TF-TF and TF-EP300 interactions
+## 🔬 Structural atlas of TF-TF and TF-EP300 interactions
 
-This section allows you to explore transcription factor pairs identified in the causal network. You can visualize various metrics such as Heatmaps and pLDDT (predicted Local Distance Difference Test) for both proteins in the interacting pair. 
-The top row is the pLDDT segmentation plot for the two TF. pLDDT is a good measure of protein disorderness. We use it to identify the disordered regions of the protein.
-Each TF is splited into disordered segments and ordered segments and named numerically as ZFX_0, ZFX_1, etc. The disordered segments are labeled with red color. Annotation from Uniprot is also provided when available.
-The second row is the interaction pLDDT plot. In this plot, we performed all-against-all AlphaFold2 predictions for the segments of the two TFs and plot the pLDDT score for each segment pair in comparison to the pLDDT score of the monomer structure of the two TFs.
-If we find a region that has a higher pLDDT score than the monomer structure, we can infer that this region is stabilized by the interaction between the two TFs.
-The third row is the heatmap plot. In this plot, we plot the interaction score for each segment pair, which includes:
-- interchain min pAE: smaller is better. This is the minimum predicted AlphaFold2 pAE score between the two segments. Well-bound protein-protein interactions ususally have a low interchain pAE score.
-- mean pLDDT: larger is better. This is the mean predicted AlphaFold2 pLDDT score of the two segments, a measure of prediction confidence or (inverse-)disorderness.
-- ipTM: larger is better. This is the interaction interface TM score of the two segments, a measure of the quality of the predicted interactions produced by AlphaFold2.
-- pDockQ: larger is better. This is the pDockQ score of the two segments, which is a measure of the quality of the predicted interactions.
-You can download the PDB file for specific segment pairs by clicking the 'Get PDB' button.
+This section allows you to explore transcription factor pairs within a causal network. You can visualize metrics like Heatmaps and pLDDT (predicted Local Distance Difference Test) for both proteins in the pair.
+
+The first row displays the pLDDT segmentation plot for the two TFs, helping to identify protein disorder regions. Each TF is divided into disordered and ordered segments labeled numerically as ZFX_0, ZFX_1, etc., with disordered segments marked in red. Uniprot annotations are included if available.
+
+The second row shows the interaction pLDDT plot. It compares pLDDT scores between segment pairs from AlphaFold2 predictions, indicating regions stabilized by TF interactions.
+
+The third row presents a heatmap plot, including:
+
+- *Interchain min pAE*: lower scores indicate stronger protein-protein interactions.
+- *Mean pLDDT*: higher scores signify greater prediction confidence or (inverse-)disorderness.
+- *ipTM*: higher scores reflect better predicted interaction quality by AlphaFold2.
+- *pDockQ*: higher scores indicate improved predicted interaction quality.
+
+You can download specific segment pair PDB files by clicking 'Get PDB.'
 """
         )
 
