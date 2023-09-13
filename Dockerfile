@@ -10,7 +10,7 @@ RUN micromamba install -n base -c conda-forge -c bioconda -y python=3.10 pip bio
 RUN micromamba install -n base -c conda-forge -c bioconda -y nglview tqdm matplotlib pandas 
 RUN micromamba install -n base -c conda-forge -c bioconda -y openpyxl pyarrow python-box xmlschema seaborn numpy py3Dmol pyranges scipy pyyaml zarr numcodecs 
 RUN micromamba install -n base -c conda-forge -c bioconda -y pybigwig networkx plotly pysam requests seqlogo MOODS urllib3 pyliftover gprofiler-official pyfaidx
-RUN micromamba install -n base -c conda-forge dash-bio
+RUN micromamba install -n base -c conda-forge -y dash-bio
 
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
 # Activate the environment and install additional packages via pip
