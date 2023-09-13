@@ -6,7 +6,7 @@ WORKDIR /app
 
 
 # Create a new environment using mamba with specified packages
-RUN micromamba install -n base -c conda-forge -c bioconda -y python=3.10 pip biopython pygraphviz
+RUN micromamba install -n base -c conda-forge -c bioconda -y python=3.10 pip biopython
 RUN micromamba install -n base -c conda-forge -c bioconda -y nglview tqdm matplotlib pandas 
 RUN micromamba install -n base -c conda-forge -c bioconda -y openpyxl pyarrow python-box xmlschema seaborn numpy py3Dmol pyranges scipy pyyaml zarr numcodecs 
 RUN micromamba install -n base -c conda-forge -c bioconda -y pybigwig networkx plotly pysam requests seqlogo MOODS urllib3 pyliftover gprofiler-official pyfaidx
