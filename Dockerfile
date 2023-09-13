@@ -42,6 +42,11 @@ RUN cd modules/proscope &&  \
 RUN cd modules/atac_rna_data_processing &&  \
     pip3 install .
 
+# clean all mamba caches and remove unnecessary files
+RUN micromamba clean --all --yes
+
+
+
 WORKDIR /app
 
 # Make port 80 available to the world outside this container
