@@ -1,3 +1,14 @@
+---
+title: GET
+app_file: app/main.py
+colorFrom: gray
+colorTo: red
+sdk: docker
+license: cc-by-nc-4.0
+pinned: false
+---
+
+
 # Data preparation
 Put the data in the following structure in the root directory of the project.
 ```bash
