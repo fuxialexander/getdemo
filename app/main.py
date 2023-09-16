@@ -154,7 +154,7 @@ if __name__ == "__main__":
         gr.Markdown(
             """# 🌟 GET: A Foundation Model of Transcription Across Human Cell Types 🌟
 
-Here we introduce GET, an innovative computational model aimed at understanding transcriptional regulation across 235 human fetal and adult cell types. 
+Here we introduce GET, an innovative computational model aimed at understanding transcriptional regulation across 213 human fetal and adult cell types. 
 Built solely on chromatin accessibility and sequence data, GET exhibits unparalleled generalizability and accuracy in predicting gene expression, even in previously unstudied cell types. 
 The model adapts seamlessly across various sequencing platforms and assays, allowing inference of broad-spectrum regulatory activity. 
 We validate GET's efficacy through its superior prediction of lentivirus-based massive parallel reporter assay outcomes and its ability to identify previously elusive distant regulatory regions in fetal erythroblasts. 
