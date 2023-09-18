@@ -6,34 +6,31 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pkg_resources
 from dash_bio import Clustergram
-from proscope.data import get_genename_to_uniprot, get_lddt, get_seq
-
-seq = get_seq()
-genename_to_uniprot = get_genename_to_uniprot()
-lddt = get_lddt()
 import sys
 import s3fs
 from glob import glob
-
 import numpy as np
+
 from atac_rna_data_processing.config.load_config import load_config
 from atac_rna_data_processing.io.celltype import GETCellType
 from atac_rna_data_processing.io.nr_motif_v1 import NrMotifV1
 from proscope.af2 import AFPairseg
+from proscope.data import get_genename_to_uniprot, get_lddt, get_seq
 from proscope.protein import Protein
 from proscope.viewer import view_pdb_html
+
+
+seq = get_seq()
+genename_to_uniprot = get_genename_to_uniprot()
+lddt = get_lddt()
 
 args = argparse.ArgumentParser()
 args.add_argument("-p", "--port", type=int, default=7860, help="Port number")
 args.add_argument("-s", "--share", action="store_true", help="Share on network")
-args.add_argument("-d", "--data", type=str, default="/data", help="Data directory")
 args.add_argument("-u", "--s3_uri", type=str, default="None", help="Path to demo S3 bucket")
+args.add_argument("-d", "--data", type=str, default="None", help="Data directory")
 args = args.parse_args()
-# set pseudo args
-# args = args.parse_args(['-p', '7869', '-s', '-d', '/manitou/pmg/users/xf2217/demo_data'])
 
-gene_pairs = glob(f"{args.s3_path}/structures/causal/*")
-gene_pairs = [os.path.basename(pair) for pair in gene_pairs]
 GET_CONFIG = load_config(
    "/app/modules/atac_rna_data_processing/atac_rna_data_processing/config/GET"
 )
@@ -41,46 +38,57 @@ GET_CONFIG.celltype.jacob = True
 GET_CONFIG.celltype.num_cls = 2
 GET_CONFIG.celltype.input = True
 GET_CONFIG.celltype.embed = True
-GET_CONFIG.celltype.data_dir = (
-    f"{args.s3_path}/pretrain_human_bingren_shendure_apr2023/fetal_adult/"
-)
-GET_CONFIG.celltype.interpret_dir = (
-    f"{args.s3_path}/Interpretation_all_hg38_allembed_v4_natac/"
-)
-GET_CONFIG.motif_dir = "/manitou/pmg/users/xf2217/interpret_natac/motif-clustering"
-motif = NrMotifV1.load_from_pickle(
-    pkg_resources.resource_filename("atac_rna_data_processing", "data/NrMotifV1.pkl"),
-    # GET_CONFIG.motif_dir,
-)
-GET_CONFIG.s3_path = args.s3_path if args.s3_path else None
 
-cell_type_annot = pd.read_csv(
-    GET_CONFIG.celltype.data_dir.split("fetal_adult")[0]
-    + "data/cell_type_pretrain_human_bingren_shendure_apr2023.txt"
-)
-cell_type_id_to_name = dict(zip(cell_type_annot["id"], cell_type_annot["celltype"]))
-cell_type_name_to_id = dict(zip(cell_type_annot["celltype"], cell_type_annot["id"]))
-if GET_CONFIG.s3_path: 
+if args.s3_uri: # Use S3 path if exists
+    GET_CONFIG.s3_uri = args.s3_uri
     s3 = s3fs.S3FileSystem()
+    GET_CONFIG.celltype.data_dir = (
+        f"{args.s3_uri}/pretrain_human_bingren_shendure_apr2023/fetal_adult/"
+    )
+    GET_CONFIG.celltype.interpret_dir = (
+        f"{args.s3_uri}/Interpretation_all_hg38_allembed_v4_natac/"
+    )
+    GET_CONFIG.motif_dir = f"{args.s3_uri}/interpret_natac/motif-clustering"
     available_celltypes = sorted(
         [
             cell_type_id_to_name[f.split("/")[-1]]
             for f in s3.glob(GET_CONFIG.celltype.interpret_dir + "*")
         ]
     )
+    gene_pairs = s3.glob(f"{args.s3_uri}/structures/causal/*")
 else:
+    GET_CONFIG.celltype.data_dir = (
+        f"{args.data}/pretrain_human_bingren_shendure_apr2023/fetal_adult/"
+    )
+    GET_CONFIG.celltype.interpret_dir = (
+        f"{args.data}/Interpretation_all_hg38_allembed_v4_natac/"
+    )
+    GET_CONFIG.motif_dir = f"{args.data}/interpret_natac/motif-clustering"
     available_celltypes = sorted(
         [
             cell_type_id_to_name[f.split("/")[-1]]
             for f in glob(GET_CONFIG.celltype.interpret_dir + "*")
         ]
     )
+    gene_pairs = glob(f"{args.data}/structures/causal/*")
+
+gene_pairs = [os.path.basename(pair) for pair in gene_pairs]
+motif = NrMotifV1.load_from_pickle(
+    pkg_resources.resource_filename("atac_rna_data_processing", "data/NrMotifV1.pkl"),
+    GET_CONFIG.motif_dir,
+)
+cell_type_annot = pd.read_csv(
+    GET_CONFIG.celltype.data_dir.split("fetal_adult")[0]
+    + "data/cell_type_pretrain_human_bingren_shendure_apr2023.txt"
+)
+cell_type_id_to_name = dict(zip(cell_type_annot["id"], cell_type_annot["celltype"]))
+cell_type_name_to_id = dict(zip(cell_type_annot["celltype"], cell_type_annot["id"]))
 plt.rcParams["figure.dpi"] = 100
 
 
 def visualize_AF2(tf_pair, a):
-    strcture_dir = f"{args.s3_path}/structures/causal/{tf_pair}"
-    fasta_dir = f"{args.s3_path}/sequences/causal/{tf_pair}"
+    strcture_dir = f"{args.s3_uri}/structures/causal/{tf_pair}"
+    fasta_dir = f"{args.s3_uri}/sequences/causal/{tf_pair}"
     if not os.path.exists(strcture_dir):
         gr.ErrorText("No such gene pair")
 
