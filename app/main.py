@@ -32,22 +32,22 @@ args = args.parse_args()
 gene_pairs = glob(f"{args.data}/structures/causal/*")
 gene_pairs = [os.path.basename(pair) for pair in gene_pairs]
 GET_CONFIG = load_config(
-    "/manitou/pmg/users/xf2217/atac_rna_data_processing/atac_rna_data_processing/config/GET"
+   "/app/modules/atac_rna_data_processing/atac_rna_data_processing/config/GET"
 )
 GET_CONFIG.celltype.jacob = True
 GET_CONFIG.celltype.num_cls = 2
 GET_CONFIG.celltype.input = True
 GET_CONFIG.celltype.embed = True
 GET_CONFIG.celltype.data_dir = (
-    "/manitou/pmg/users/xf2217/pretrain_human_bingren_shendure_apr2023/fetal_adult/"
+    f"{args.data}/pretrain_human_bingren_shendure_apr2023/fetal_adult/"
 )
 GET_CONFIG.celltype.interpret_dir = (
-    "/manitou/pmg/users/xf2217/Interpretation_all_hg38_allembed_v4_natac/"
+    f"{args.data}/Interpretation_all_hg38_allembed_v4_natac/"
 )
 GET_CONFIG.motif_dir = "/manitou/pmg/users/xf2217/interpret_natac/motif-clustering"
 motif = NrMotifV1.load_from_pickle(
     pkg_resources.resource_filename("atac_rna_data_processing", "data/NrMotifV1.pkl"),
-    GET_CONFIG.motif_dir,
+    # GET_CONFIG.motif_dir,
 )
 cell_type_annot = pd.read_csv(
     GET_CONFIG.celltype.data_dir.split("fetal_adult")[0]
