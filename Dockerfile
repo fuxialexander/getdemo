@@ -54,4 +54,4 @@ EXPOSE 7681
 # Set the working directory where your app resides
 
 # Command to run the Gradio app automatically
-CMD ["python", "app/main.py", "-p", "7681", "-s", "-d", "/data"]
+CMD ["python", "app/main.py", "-p", "7681", "-s", "-d", "/data", "-u", "s3://2023-get-xf2217/get_demo/"]
