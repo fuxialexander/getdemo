@@ -1,10 +1,13 @@
 # Use an official miniconda3 as a parent image
 FROM mambaorg/micromamba
 
+
+USER root
+RUN usermod -u 1000 $MAMBA_USER
+USER $MAMBA_USER
+
 # Set the working directory in the container to /app
 WORKDIR /app
-
-
 # Create a new environment using mamba with specified packages
 RUN micromamba install -n base -c conda-forge -c bioconda -y python=3.10 pip biopython
 RUN micromamba install -n base -c conda-forge -c bioconda -y nglview tqdm matplotlib pandas 
