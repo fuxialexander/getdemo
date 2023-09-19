@@ -32,7 +32,7 @@ args.add_argument("-d", "--data", type=str, default=None, help="Data directory")
 args = args.parse_args()
 
 GET_CONFIG = load_config(
-    "/app/modules/atac_rna_data_processing/atac_rna_data_processing/config/GET"
+    "./modules/atac_rna_data_processing/atac_rna_data_processing/config/GET"
 )
 GET_CONFIG.celltype.jacob = True
 GET_CONFIG.celltype.num_cls = 2
@@ -49,7 +49,7 @@ if args.s3_uri: # Use S3 path if exists
     GET_CONFIG.celltype.interpret_dir = (
         f"{args.s3_uri}/Interpretation_all_hg38_allembed_v4_natac/"
     )
-    GET_CONFIG.motif_dir = f"{args.s3_uri}/interpret_natac/motif-clustering"
+    GET_CONFIG.motif_dir = f"{args.s3_uri}/interpret_natac/motif-clustering/"
     cell_type_annot = pd.read_csv(
         GET_CONFIG.celltype.data_dir.split("fetal_adult")[0]
             + "data/cell_type_pretrain_human_bingren_shendure_apr2023.txt"
@@ -69,13 +69,14 @@ if args.s3_uri: # Use S3 path if exists
         GET_CONFIG.motif_dir,
     )
 else: # Run with local data
+    GET_CONFIG.s3_file_sys = None
     GET_CONFIG.celltype.data_dir = (
         f"{args.data}/pretrain_human_bingren_shendure_apr2023/fetal_adult/"
     )
     GET_CONFIG.celltype.interpret_dir = (
         f"{args.data}/Interpretation_all_hg38_allembed_v4_natac/"
     )
-    GET_CONFIG.motif_dir = f"{args.data}/interpret_natac/motif-clustering"
+    GET_CONFIG.motif_dir = f"{args.data}/interpret_natac/motif-clustering/"
     cell_type_annot = pd.read_csv(
         GET_CONFIG.celltype.data_dir.split("fetal_adult")[0]
             + "data/cell_type_pretrain_human_bingren_shendure_apr2023.txt"
