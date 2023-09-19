@@ -32,12 +32,13 @@ args.add_argument("-d", "--data", type=str, default="None", help="Data directory
 args = args.parse_args()
 
 GET_CONFIG = load_config(
-   "/app/modules/atac_rna_data_processing/atac_rna_data_processing/config/GET"
+    "/app/modules/atac_rna_data_processing/atac_rna_data_processing/config/GET"
 )
 GET_CONFIG.celltype.jacob = True
 GET_CONFIG.celltype.num_cls = 2
 GET_CONFIG.celltype.input = True
 GET_CONFIG.celltype.embed = True
+plt.rcParams["figure.dpi"] = 100
 
 if args.s3_uri: # Use S3 path if exists
     GET_CONFIG.s3_uri = args.s3_uri
@@ -49,6 +50,12 @@ if args.s3_uri: # Use S3 path if exists
         f"{args.s3_uri}/Interpretation_all_hg38_allembed_v4_natac/"
     )
     GET_CONFIG.motif_dir = f"{args.s3_uri}/interpret_natac/motif-clustering"
+    cell_type_annot = pd.read_csv(
+        GET_CONFIG.celltype.data_dir.split("fetal_adult")[0]
+            + "data/cell_type_pretrain_human_bingren_shendure_apr2023.txt"
+    )
+    cell_type_id_to_name = dict(zip(cell_type_annot["id"], cell_type_annot["celltype"]))
+    cell_type_name_to_id = dict(zip(cell_type_annot["celltype"], cell_type_annot["id"]))
     available_celltypes = sorted(
         [
             cell_type_id_to_name[f.split("/")[-1]]
@@ -56,7 +63,12 @@ if args.s3_uri: # Use S3 path if exists
         ]
     )
     gene_pairs = s3.glob(f"{args.s3_uri}/structures/causal/*")
-else:
+    gene_pairs = [os.path.basename(pair) for pair in gene_pairs]
+    motif = NrMotifV1.load_from_pickle(
+        pkg_resources.resource_filename("atac_rna_data_processing", "data/NrMotifV1.pkl"),
+        GET_CONFIG.motif_dir,
+    )
+else: # Run with local data
     GET_CONFIG.celltype.data_dir = (
         f"{args.data}/pretrain_human_bingren_shendure_apr2023/fetal_adult/"
     )
@@ -64,6 +76,12 @@ else:
         f"{args.data}/Interpretation_all_hg38_allembed_v4_natac/"
     )
     GET_CONFIG.motif_dir = f"{args.data}/interpret_natac/motif-clustering"
+    cell_type_annot = pd.read_csv(
+        GET_CONFIG.celltype.data_dir.split("fetal_adult")[0]
+            + "data/cell_type_pretrain_human_bingren_shendure_apr2023.txt"
+    )
+    cell_type_id_to_name = dict(zip(cell_type_annot["id"], cell_type_annot["celltype"]))
+    cell_type_name_to_id = dict(zip(cell_type_annot["celltype"], cell_type_annot["id"]))
     available_celltypes = sorted(
         [
             cell_type_id_to_name[f.split("/")[-1]]
@@ -71,19 +89,11 @@ else:
         ]
     )
     gene_pairs = glob(f"{args.data}/structures/causal/*")
-
-gene_pairs = [os.path.basename(pair) for pair in gene_pairs]
-motif = NrMotifV1.load_from_pickle(
-    pkg_resources.resource_filename("atac_rna_data_processing", "data/NrMotifV1.pkl"),
-    GET_CONFIG.motif_dir,
-)
-cell_type_annot = pd.read_csv(
-    GET_CONFIG.celltype.data_dir.split("fetal_adult")[0]
-    + "data/cell_type_pretrain_human_bingren_shendure_apr2023.txt"
-)
-cell_type_id_to_name = dict(zip(cell_type_annot["id"], cell_type_annot["celltype"]))
-cell_type_name_to_id = dict(zip(cell_type_annot["celltype"], cell_type_annot["id"]))
-plt.rcParams["figure.dpi"] = 100
+    gene_pairs = [os.path.basename(pair) for pair in gene_pairs]
+    motif = NrMotifV1.load_from_pickle(
+        pkg_resources.resource_filename("atac_rna_data_processing", "data/NrMotifV1.pkl"),
+        GET_CONFIG.motif_dir,
+    )
 
 
 def visualize_AF2(tf_pair, a):

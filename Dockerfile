@@ -6,7 +6,7 @@ WORKDIR /app
 
 
 # Create a new environment using mamba with specified packages
-RUN micromamba install -n base -c conda-forge -c bioconda -y python=3.10 pip biopython
+RUN micromamba install -n base -c conda-forge -c bioconda -y python=3.10 pip biopython s3fs
 RUN micromamba install -n base -c conda-forge -c bioconda -y nglview tqdm matplotlib pandas 
 RUN micromamba install -n base -c conda-forge -c bioconda -y openpyxl pyarrow python-box xmlschema seaborn numpy py3Dmol pyranges scipy pyyaml zarr numcodecs 
 RUN micromamba install -n base -c conda-forge -c bioconda -y pybigwig networkx plotly pysam requests seqlogo MOODS urllib3 pyliftover gprofiler-official pyfaidx
@@ -54,4 +54,4 @@ EXPOSE 7681
 # Set the working directory where your app resides
 
 # Command to run the Gradio app automatically
-CMD ["python", "app/main.py", "-p", "7681", "-s", "-u", "s3://2023-get-xf2217/get_demo", "-d", "/data"]
+CMD ["python", "app/main.py", "-p", "7681", "-s", "-u", "s3://2023-get-xf2217/get_demo_test_data", "-d", "/data"]
