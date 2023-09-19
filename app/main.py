@@ -27,8 +27,8 @@ lddt = get_lddt()
 args = argparse.ArgumentParser()
 args.add_argument("-p", "--port", type=int, default=7860, help="Port number")
 args.add_argument("-s", "--share", action="store_true", help="Share on network")
-args.add_argument("-u", "--s3_uri", type=str, default="None", help="Path to demo S3 bucket")
-args.add_argument("-d", "--data", type=str, default="None", help="Data directory")
+args.add_argument("-u", "--s3_uri", type=str, default=None, help="Path to demo S3 bucket")
+args.add_argument("-d", "--data", type=str, default=None, help="Data directory")
 args = args.parse_args()
 
 GET_CONFIG = load_config(
@@ -94,7 +94,6 @@ else: # Run with local data
         pkg_resources.resource_filename("atac_rna_data_processing", "data/NrMotifV1.pkl"),
         GET_CONFIG.motif_dir,
     )
-
 
 def visualize_AF2(tf_pair, a):
     if args.s3_uri:
