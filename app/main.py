@@ -87,8 +87,12 @@ plt.rcParams["figure.dpi"] = 100
 
 
 def visualize_AF2(tf_pair, a):
-    strcture_dir = f"{args.s3_uri}/structures/causal/{tf_pair}"
-    fasta_dir = f"{args.s3_uri}/sequences/causal/{tf_pair}"
+    if args.s3_uri:
+        strcture_dir = f"{args.s3_uri}/structures/causal/{tf_pair}"
+        fasta_dir = f"{args.s3_uri}/sequences/causal/{tf_pair}"
+    else:
+        strcture_dir = f"{args.data}/structures/causal/{tf_pair}"
+        fasta_dir = f"{args.data}/sequences/causal/{tf_pair}"
     if not os.path.exists(strcture_dir):
         gr.ErrorText("No such gene pair")
 
