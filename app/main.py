@@ -41,8 +41,9 @@ GET_CONFIG.celltype.embed = True
 plt.rcParams["figure.dpi"] = 100
 
 if args.s3_uri: # Use S3 path if exists
-    GET_CONFIG.s3_uri = args.s3_uri
     s3 = s3fs.S3FileSystem()
+    GET_CONFIG.s3_file_sys = s3
+    GET_CONFIG.s3_uri = args.s3_uri
     GET_CONFIG.celltype.data_dir = (
         f"{args.s3_uri}/pretrain_human_bingren_shendure_apr2023/fetal_adult/"
     )
