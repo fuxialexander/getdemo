@@ -43,7 +43,6 @@ plt.rcParams["figure.dpi"] = 100
 if args.s3_uri: # Use S3 path if exists
     s3 = s3fs.S3FileSystem(anon=True)
     GET_CONFIG.s3_file_sys = s3
-    GET_CONFIG.s3_uri = args.s3_uri
     GET_CONFIG.celltype.data_dir = (
         f"{args.s3_uri}/pretrain_human_bingren_shendure_apr2023/fetal_adult/"
     )
