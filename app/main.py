@@ -14,7 +14,7 @@ import numpy as np
 from atac_rna_data_processing.config.load_config import load_config
 from atac_rna_data_processing.io.celltype import GETCellType
 from atac_rna_data_processing.io.nr_motif_v1 import NrMotifV1
-from proscope.af2 import AFPairseg
+from proscope.af2 import GETAFPairseg
 from proscope.data import get_genename_to_uniprot, get_lddt, get_seq
 from proscope.protein import Protein
 from proscope.viewer import view_pdb_html
@@ -33,7 +33,7 @@ args.add_argument("-n", "--host", type=str, default="127.0.0.1")
 args = args.parse_args()
 
 GET_CONFIG = load_config(
-    "./modules/atac_rna_data_processing/atac_rna_data_processing/config/GET"
+    "/app/modules/atac_rna_data_processing/atac_rna_data_processing/config/GET"
 )
 GET_CONFIG.celltype.jacob = True
 GET_CONFIG.celltype.num_cls = 2
@@ -42,8 +42,8 @@ GET_CONFIG.celltype.embed = True
 plt.rcParams["figure.dpi"] = 100
 
 if args.s3_uri: # Use S3 path if exists
-    s3 = s3fs.S3FileSystem(anon=True)
-    GET_CONFIG.s3_file_sys = s3
+    s3_file_sys = s3fs.S3FileSystem(anon=True)
+    GET_CONFIG.s3_file_sys = s3_file_sys
     GET_CONFIG.celltype.data_dir = (
         f"{args.s3_uri}/pretrain_human_bingren_shendure_apr2023/fetal_adult/"
     )
@@ -61,10 +61,10 @@ if args.s3_uri: # Use S3 path if exists
     available_celltypes = sorted(
         [
             cell_type_id_to_name[f.split("/")[-1]]
-            for f in s3.glob(GET_CONFIG.celltype.interpret_dir + "*")
+            for f in s3_file_sys.glob(GET_CONFIG.celltype.interpret_dir + "*")
         ]
     )
-    gene_pairs = s3.glob(f"{args.s3_uri}/structures/causal/*")
+    gene_pairs = s3_file_sys.glob(f"{args.s3_uri}/structures/causal/*")
     gene_pairs = [os.path.basename(pair) for pair in gene_pairs]
     motif = NrMotifV1.load_from_pickle(
         pkg_resources.resource_filename("atac_rna_data_processing", "data/NrMotifV1.pkl"),
@@ -106,10 +106,11 @@ def visualize_AF2(tf_pair, a):
     else:
         strcture_dir = f"{args.data}/structures/causal/{tf_pair}"
         fasta_dir = f"{args.data}/sequences/causal/{tf_pair}"
-    if not os.path.exists(strcture_dir):
-        gr.ErrorText("No such gene pair")
 
-    a = AFPairseg(strcture_dir, fasta_dir)
+        if not os.path.exists(strcture_dir):
+            gr.ErrorText("No such gene pair")
+
+    a = GETAFPairseg(strcture_dir, fasta_dir, GET_CONFIG)
     # segpair.choices = list(a.pairs_data.keys())
     fig1, ax1 = a.plot_plddt_gene1()
     fig2, ax2 = a.plot_plddt_gene2()
@@ -123,7 +124,7 @@ def visualize_AF2(tf_pair, a):
 
 def view_pdb(seg_pair, a):
     pdb_path = a.pairs_data[seg_pair].pdb
-    return view_pdb_html(pdb_path), a, pdb_path
+    return view_pdb_html(pdb_path, s3_file_sys=s3_file_sys), a, pdb_path
 
 
 def update_dropdown(x, label):
