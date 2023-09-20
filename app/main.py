@@ -51,6 +51,7 @@ if args.s3_uri: # Use S3 path if exists
         f"{args.s3_uri}/Interpretation_all_hg38_allembed_v4_natac/"
     )
     GET_CONFIG.motif_dir = f"{args.s3_uri}/interpret_natac/motif-clustering/"
+    GET_CONFIG.assets_dir = f"{args.s3_uri}/assets/"
     cell_type_annot = pd.read_csv(
         GET_CONFIG.celltype.data_dir.split("fetal_adult")[0]
             + "data/cell_type_pretrain_human_bingren_shendure_apr2023.txt"
@@ -78,6 +79,7 @@ else: # Run with local data
         f"{args.data}/Interpretation_all_hg38_allembed_v4_natac/"
     )
     GET_CONFIG.motif_dir = f"{args.data}/interpret_natac/motif-clustering/"
+    GET_CONFIG.assets_dir = f"{args.data}/assets/"
     cell_type_annot = pd.read_csv(
         GET_CONFIG.celltype.data_dir.split("fetal_adult")[0]
             + "data/cell_type_pretrain_human_bingren_shendure_apr2023.txt"
