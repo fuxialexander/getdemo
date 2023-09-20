@@ -29,6 +29,7 @@ args.add_argument("-p", "--port", type=int, default=7860, help="Port number")
 args.add_argument("-s", "--share", action="store_true", help="Share on network")
 args.add_argument("-u", "--s3_uri", type=str, default=None, help="Path to demo S3 bucket")
 args.add_argument("-d", "--data", type=str, default=None, help="Data directory")
+args.add_argument("-n", "--host", type=str, default="127.0.0.1")
 args = args.parse_args()
 
 GET_CONFIG = load_config(
@@ -360,4 +361,4 @@ You can download specific segment pair PDB files by clicking 'Get PDB.'
             outputs=[subnet_plot, cell],
         )
 
-    demo.launch(share=args.share, server_port=args.port)
+    demo.launch(server_name=args.host, share=args.share, server_port=args.port)
