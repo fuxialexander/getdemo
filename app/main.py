@@ -156,11 +156,11 @@ def plot_gene_exp(cell, plotly=True):
 
 def plot_motif_corr(cell):
     fig = Clustergram(
-        data=cell.gene_by_motif.corr,
+        data=cell.gene_by_motif.corr.values,
         column_labels=list(cell.gene_by_motif.corr.columns.values),
         row_labels=list(cell.gene_by_motif.corr.index),
         hidden_labels=["row", "col"],
-        link_method="ward",
+        # link_method="ward",
         display_ratio=0.1,
         width=600,
         height=350,
