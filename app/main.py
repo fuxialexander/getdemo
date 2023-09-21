@@ -33,7 +33,7 @@ args.add_argument("-n", "--host", type=str, default="127.0.0.1")
 args = args.parse_args()
 
 GET_CONFIG = load_config(
-    "/app/atac_rna_data_processing/atac_rna_data_processing/config/GET"
+    "/app/modules/atac_rna_data_processing/atac_rna_data_processing/config/GET"
 )
 GET_CONFIG.celltype.jacob = True
 GET_CONFIG.celltype.num_cls = 2
