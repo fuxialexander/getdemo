@@ -1,6 +1,0 @@
-[submodule "modules/atac_rna_data_processing"]
-	path = modules/atac_rna_data_processing
-	url = git@github.com:fuxialexander/atac_rna_data_processing.git
-[submodule "modules/proscope"]
-	path = modules/proscope
-	url = git@github.com:fuxialexander/proscope.git
