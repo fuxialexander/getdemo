@@ -32,4 +32,5 @@ jobs:
       with:
         context: .
         push: true
+        file: ./Dockerfile-dockerhub
         tags: fuxialexander/getdemo:latest
