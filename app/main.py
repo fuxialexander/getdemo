@@ -124,7 +124,7 @@ def visualize_AF2(tf_pair, a):
 
 def view_pdb(seg_pair, a):
     pdb_path = a.pairs_data[seg_pair].pdb
-    return view_pdb_html(pdb_path, s3_file_sys=s3_file_sys), a, pdb_path
+    return view_pdb_html(pdb_path, s3_file_sys=GET_CONFIG.s3_file_sys), a, pdb_path
 
 
 def update_dropdown(x, label):
@@ -308,7 +308,7 @@ You can download specific segment pair PDB files by clicking 'Get PDB.'
                 segpair = gr.Dropdown(label="Seg pair")
                 segpair_btn = gr.Button(value="Get PDB")
                 pdb_html = gr.HTML(label="PDB HTML")
-                pdb_file = gr.File(label="Download PDB")
+                # pdb_file = gr.File(label="Download PDB")
 
         with gr.Row() as row:
             with gr.Column():
@@ -332,7 +332,7 @@ You can download specific segment pair PDB files by clicking 'Get PDB.'
             ],
         )
         segpair_btn.click(
-            view_pdb, inputs=[segpair, af], outputs=[pdb_html, af, pdb_file]
+            view_pdb, inputs=[segpair, af], outputs=[pdb_html, af]
         )
         celltype_btn.click(
             load_and_plot_celltype,
