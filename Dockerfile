@@ -1,4 +1,4 @@
-# Use an official miniconda3 as a parent image
+# This is the dockerfile for the Gradio app on huggingface
 FROM fuxialexander/getdemo:latest
 
 # Switch to mambauser with updated UID

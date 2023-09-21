@@ -1,4 +1,4 @@
-# Use an official miniconda3 as a parent image
+# This is the dockerfile for dockerhub fuxialexander/getdemo:latest
 FROM mambaorg/micromamba
 
 
