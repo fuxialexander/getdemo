@@ -33,7 +33,7 @@ args.add_argument("-n", "--host", type=str, default="127.0.0.1")
 args = args.parse_args()
 
 GET_CONFIG = load_config(
-    "/app/modules/atac_rna_data_processing/atac_rna_data_processing/config/GET"
+    "/app/atac_rna_data_processing/atac_rna_data_processing/config/GET"
 )
 GET_CONFIG.celltype.jacob = True
 GET_CONFIG.celltype.num_cls = 2
@@ -124,7 +124,18 @@ def visualize_AF2(tf_pair, a):
 
 def view_pdb(seg_pair, a):
     pdb_path = a.pairs_data[seg_pair].pdb
-    return view_pdb_html(pdb_path, s3_file_sys=GET_CONFIG.s3_file_sys), a, pdb_path
+    if args.s3_uri:
+        bucket_name = f"{args.s3_uri}".split("//")[1].split("/")[0]
+        path_in_bucket = pdb_path.split("/", 1)[1]
+        file_name = pdb_path.split("/")[-1]
+        output_path = f"https://{bucket_name}.s3.amazonaws.com/{path_in_bucket}"
+        output_text = f"""
+        ### Download PDB
+        [{file_name}]({output_path})
+        """
+    else: # No download link if running locally
+        output_text = ""
+    return view_pdb_html(pdb_path, s3_file_sys=GET_CONFIG.s3_file_sys), a, output_text
 
 
 def update_dropdown(x, label):
@@ -308,7 +319,7 @@ You can download specific segment pair PDB files by clicking 'Get PDB.'
                 segpair = gr.Dropdown(label="Seg pair")
                 segpair_btn = gr.Button(value="Get PDB")
                 pdb_html = gr.HTML(label="PDB HTML")
-                # pdb_file = gr.File(label="Download PDB")
+                pdb_download = gr.Markdown(label="Download PDB")
 
         with gr.Row() as row:
             with gr.Column():
@@ -332,7 +343,7 @@ You can download specific segment pair PDB files by clicking 'Get PDB.'
             ],
         )
         segpair_btn.click(
-            view_pdb, inputs=[segpair, af], outputs=[pdb_html, af]
+            view_pdb, inputs=[segpair, af], outputs=[pdb_html, af, pdb_download]
         )
         celltype_btn.click(
             load_and_plot_celltype,
