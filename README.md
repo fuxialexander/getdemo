@@ -35,16 +35,16 @@ data
 git clone --recursive git@github.com:fuxialexander/getdemo.git
 cd getdemo
 docker pull fuxialexander/getdemo:latest
-docker run -it -v "/path/to/data:/data" --rm -p 7681:7681 fuxialexander/getdemo
-or
+docker run -it -v "/path/to/data:/data" --rm -p 7860:7860 fuxialexander/getdemo
+# or
 singularity run  -w --bind /manitou/pmg/users/xf2217/getdemo:/app --bind /manitou/pmg/users/xf2217/demo_data:/data --bind /pmglocal/xf2217/tmp:/tmp --no-home --pwd /app getdemo
 ```
-The gradio interface will be available at http://127.0.0.1:7681, a sharable link will be printed in the terminal.
+The gradio interface will be available at http://127.0.0.1:7860, a sharable link will be printed in the terminal.
 
 # Build
 ```bash
 git clone --recursive git@github.com:fuxialexander/getdemo.git
 cd getdemo
 docker build -t getdemo .
-docker run -it -v "/path/to/data:/data" --rm -p 7681:7681 getdemo
+docker run -it -v "/path/to/data:/data" --rm -p 7860:7860 getdemo
 ```
