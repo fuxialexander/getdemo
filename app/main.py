@@ -112,14 +112,12 @@ def visualize_AF2(tf_pair, a):
 
     a = GETAFPairseg(strcture_dir, fasta_dir, GET_CONFIG)
     # segpair.choices = list(a.pairs_data.keys())
-    fig1, ax1 = a.plot_plddt_gene1()
-    fig2, ax2 = a.plot_plddt_gene2()
-    fig3 = a.protein1.plotly_plddt()
-    fig4 = a.protein2.plotly_plddt()
+    fig1 = a.plotly_plddt_gene1()
+    fig2 = a.plotly_plddt_gene2()
     fig5, ax5 = a.plot_score_heatmap()
     plt.tight_layout()
     new_dropdown = update_dropdown(list(a.pairs_data.keys()), "Segment pair")
-    return fig1, fig2, fig3, fig4, fig5, new_dropdown, a
+    return fig1, fig2, fig5, new_dropdown, a
 
 
 def view_pdb(seg_pair, a):
@@ -322,12 +320,8 @@ You can download specific segment pair PDB files by clicking 'Get PDB.'
                 pdb_download = gr.Markdown(label="Download PDB")
 
         with gr.Row() as row:
-            with gr.Column():
-                protein1_plddt = gr.Plot(label="Protein 1 pLDDT")
-                interact_plddt1 = gr.Plot(label="Interact pLDDT 1")
-            with gr.Column():
-                protein2_plddt = gr.Plot(label="Protein 2 pLDDT")
-                interact_plddt2 = gr.Plot(label="Interact pLDDT 2")
+            interact_plddt1 = gr.Plot(label="Interact pLDDT 1")
+            interact_plddt2 = gr.Plot(label="Interact pLDDT 2")
                 
         tf_pairs_btn.click(
             visualize_AF2,
@@ -335,8 +329,6 @@ You can download specific segment pair PDB files by clicking 'Get PDB.'
             outputs=[
                 interact_plddt1,
                 interact_plddt2,
-                protein1_plddt,
-                protein2_plddt,
                 heatmap,
                 segpair,
                 af,
