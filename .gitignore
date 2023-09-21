@@ -5,3 +5,4 @@ etc
 assets
 
 getdemo-1.0.0.sif
+.github/workflows/docker-build-and-push.yml
