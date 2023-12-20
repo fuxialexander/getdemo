@@ -6,107 +6,146 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pkg_resources
 from dash_bio import Clustergram
+import sys
+import s3fs
+from glob import glob
+import numpy as np
+
+from atac_rna_data_processing.config.load_config import load_config
+from atac_rna_data_processing.io.celltype import GETCellType
+from atac_rna_data_processing.io.nr_motif_v1 import NrMotifV1
+from proscope.af2 import GETAFPairseg
 from proscope.data import get_genename_to_uniprot, get_lddt, get_seq
+from proscope.protein import Protein
+from proscope.viewer import view_pdb_html
+
 
 seq = get_seq()
 genename_to_uniprot = get_genename_to_uniprot()
 lddt = get_lddt()
-import sys
-from glob import glob
-
-import numpy as np
-from atac_rna_data_processing.config.load_config import load_config
-from atac_rna_data_processing.io.celltype import GETCellType
-from atac_rna_data_processing.io.nr_motif_v1 import NrMotifV1
-from proscope.af2 import AFPairseg
-from proscope.protein import Protein
-from proscope.viewer import view_pdb_html
 
 args = argparse.ArgumentParser()
 args.add_argument("-p", "--port", type=int, default=7860, help="Port number")
 args.add_argument("-s", "--share", action="store_true", help="Share on network")
-args.add_argument("-d", "--data", type=str, default="/data", help="Data directory")
+args.add_argument("-u", "--s3_uri", type=str, default=None, help="Path to demo S3 bucket")
+args.add_argument("-d", "--data", type=str, default=None, help="Data directory")
+args.add_argument("-n", "--host", type=str, default="127.0.0.1")
 args = args.parse_args()
-# set pseudo args
-# args = args.parse_args(['-p', '7869', '-s', '-d', '/manitou/pmg/users/xf2217/demo_data'])
-gene_pairs = glob(f"{args.data}/structures/causal/*")
-gene_pairs = [os.path.basename(pair) for pair in gene_pairs]
+
 GET_CONFIG = load_config(
-    "/manitou/pmg/users/xf2217/atac_rna_data_processing/atac_rna_data_processing/config/GET"
+    "/app/modules/atac_rna_data_processing/atac_rna_data_processing/config/GET"
 )
 GET_CONFIG.celltype.jacob = True
 GET_CONFIG.celltype.num_cls = 2
 GET_CONFIG.celltype.input = True
 GET_CONFIG.celltype.embed = True
-GET_CONFIG.celltype.data_dir = (
-    "/manitou/pmg/users/xf2217/pretrain_human_bingren_shendure_apr2023/fetal_adult/"
-)
-GET_CONFIG.celltype.interpret_dir = (
-    "/manitou/pmg/users/xf2217/Interpretation_all_hg38_allembed_v4_natac/"
-)
-GET_CONFIG.motif_dir = "/manitou/pmg/users/xf2217/interpret_natac/motif-clustering"
-motif = NrMotifV1.load_from_pickle(
-    pkg_resources.resource_filename("atac_rna_data_processing", "data/NrMotifV1.pkl"),
-    GET_CONFIG.motif_dir,
-)
-cell_type_annot = pd.read_csv(
-    GET_CONFIG.celltype.data_dir.split("fetal_adult")[0]
-    + "data/cell_type_pretrain_human_bingren_shendure_apr2023.txt"
-)
-cell_type_id_to_name = dict(zip(cell_type_annot["id"], cell_type_annot["celltype"]))
-cell_type_name_to_id = dict(zip(cell_type_annot["celltype"], cell_type_annot["id"]))
-avaliable_celltypes = sorted(
-    [
-        cell_type_id_to_name[f.split("/")[-1]]
-        for f in glob(GET_CONFIG.celltype.interpret_dir + "*")
-    ]
-)
 plt.rcParams["figure.dpi"] = 100
 
+if args.s3_uri: # Use S3 path if exists
+    s3_file_sys = s3fs.S3FileSystem(anon=True)
+    GET_CONFIG.s3_file_sys = s3_file_sys
+    GET_CONFIG.celltype.data_dir = (
+        f"{args.s3_uri}/pretrain_human_bingren_shendure_apr2023/fetal_adult/"
+    )
+    GET_CONFIG.celltype.interpret_dir = (
+        f"{args.s3_uri}/Interpretation_all_hg38_allembed_v4_natac/"
+    )
+    GET_CONFIG.motif_dir = f"{args.s3_uri}/interpret_natac/motif-clustering/"
+    GET_CONFIG.assets_dir = f"{args.s3_uri}/assets/"
+    cell_type_annot = pd.read_csv(
+        GET_CONFIG.celltype.data_dir.split("fetal_adult")[0]
+            + "data/cell_type_pretrain_human_bingren_shendure_apr2023.txt"
+    )
+    cell_type_id_to_name = dict(zip(cell_type_annot["id"], cell_type_annot["celltype"]))
+    cell_type_name_to_id = dict(zip(cell_type_annot["celltype"], cell_type_annot["id"]))
+    available_celltypes = sorted(
+        [
+            cell_type_id_to_name[f.split("/")[-1]]
+            for f in s3_file_sys.glob(GET_CONFIG.celltype.interpret_dir + "*")
+        ]
+    )
+    gene_pairs = s3_file_sys.glob(f"{args.s3_uri}/structures/causal/*")
+    gene_pairs = [os.path.basename(pair) for pair in gene_pairs]
+    motif = NrMotifV1.load_from_pickle(
+        pkg_resources.resource_filename("atac_rna_data_processing", "data/NrMotifV1.pkl"),
+        GET_CONFIG.motif_dir,
+    )
+else: # Run with local data
+    GET_CONFIG.s3_file_sys = None
+    GET_CONFIG.celltype.data_dir = (
+        f"{args.data}/pretrain_human_bingren_shendure_apr2023/fetal_adult/"
+    )
+    GET_CONFIG.celltype.interpret_dir = (
+        f"{args.data}/Interpretation_all_hg38_allembed_v4_natac/"
+    )
+    GET_CONFIG.motif_dir = f"{args.data}/interpret_natac/motif-clustering/"
+    GET_CONFIG.assets_dir = f"{args.data}/assets/"
+    cell_type_annot = pd.read_csv(
+        GET_CONFIG.celltype.data_dir.split("fetal_adult")[0]
+            + "data/cell_type_pretrain_human_bingren_shendure_apr2023.txt"
+    )
+    cell_type_id_to_name = dict(zip(cell_type_annot["id"], cell_type_annot["celltype"]))
+    cell_type_name_to_id = dict(zip(cell_type_annot["celltype"], cell_type_annot["id"]))
+    available_celltypes = sorted(
+        [
+            cell_type_id_to_name[f.split("/")[-1]]
+            for f in glob(GET_CONFIG.celltype.interpret_dir + "*")
+        ]
+    )
+    gene_pairs = glob(f"{args.data}/structures/causal/*")
+    gene_pairs = [os.path.basename(pair) for pair in gene_pairs]
+    motif = NrMotifV1.load_from_pickle(
+        pkg_resources.resource_filename("atac_rna_data_processing", "data/NrMotifV1.pkl"),
+        GET_CONFIG.motif_dir,
+    )
 
 def visualize_AF2(tf_pair, a):
-    strcture_dir = f"{args.data}/structures/causal/{tf_pair}"
-    fasta_dir = f"{args.data}/sequences/causal/{tf_pair}"
-    if not os.path.exists(strcture_dir):
-        gr.ErrorText("No such gene pair")
+    if args.s3_uri:
+        strcture_dir = f"{args.s3_uri}/structures/causal/{tf_pair}"
+        fasta_dir = f"{args.s3_uri}/sequences/causal/{tf_pair}"
+    else:
+        strcture_dir = f"{args.data}/structures/causal/{tf_pair}"
+        fasta_dir = f"{args.data}/sequences/causal/{tf_pair}"
 
-    a = AFPairseg(strcture_dir, fasta_dir)
+        if not os.path.exists(strcture_dir):
+            gr.ErrorText("No such gene pair")
+
+    a = GETAFPairseg(strcture_dir, fasta_dir, GET_CONFIG)
     # segpair.choices = list(a.pairs_data.keys())
-    fig1, ax1 = a.plot_plddt_gene1()
-    fig2, ax2 = a.plot_plddt_gene2()
-    fig3, ax3 = a.protein1.plot_plddt()
-    fig4, ax4 = a.protein2.plot_plddt()
+    fig1 = a.plotly_plddt_gene1()
+    fig2 = a.plotly_plddt_gene2()
     fig5, ax5 = a.plot_score_heatmap()
     plt.tight_layout()
     new_dropdown = update_dropdown(list(a.pairs_data.keys()), "Segment pair")
-    return fig1, fig2, fig3, fig4, fig5, new_dropdown, a
+    return fig1, fig2, fig5, new_dropdown, a
 
 
 def view_pdb(seg_pair, a):
     pdb_path = a.pairs_data[seg_pair].pdb
-    return view_pdb_html(pdb_path), a, pdb_path
+    if args.s3_uri:
+        bucket_name = f"{args.s3_uri}".split("//")[1].split("/")[0]
+        path_in_bucket = pdb_path.split("/", 1)[1]
+        file_name = pdb_path.split("/")[-1]
+        output_path = f"https://{bucket_name}.s3.amazonaws.com/{path_in_bucket}"
+        output_text = f"""
+        ### Download PDB
+        [{file_name}]({output_path})
+        """
+    else: # No download link if running locally
+        output_text = ""
+    return view_pdb_html(pdb_path, s3_file_sys=GET_CONFIG.s3_file_sys), a, output_text
 
 
 def update_dropdown(x, label):
     return gr.Dropdown.update(choices=x, label=label)
 
 
-def filter_gene_records(cell, str):
-    if str == '':
-        return cell.gene_annot.groupby('gene_name')[['pred', 'obs', 'accessibility']].mean().reset_index().head(5), cell
-    df = cell.gene_annot.query(f"gene_name == '{str}'").groupby('gene_name')[['pred', 'obs', 'accessibility']].mean().reset_index().head(5)
-    return df, cell
-
 def load_and_plot_celltype(celltype_name, GET_CONFIG, cell):
     celltype_id = cell_type_name_to_id[celltype_name]
     cell = GETCellType(celltype_id, GET_CONFIG)
     cell.celltype_name = celltype_name
-    # gene_name.choices = sorted(gene_exp_table.gene_name.unique()
     gene_exp_fig = cell.plotly_gene_exp()
-    gene_exp_table = cell.gene_annot.groupby('gene_name')[['pred', 'obs', 'accessibility']].mean().reset_index().head(5)
-    new_gene_dropdown = update_dropdown(sorted(cell.gene_annot.gene_name.unique()), "Gene name")
-    return gene_exp_fig, gene_exp_table, new_gene_dropdown, new_gene_dropdown, cell
-    
+    return gene_exp_fig, cell
 
 
 def plot_gene_regions(cell, gene_name, plotly=True):
@@ -130,11 +169,11 @@ def plot_gene_exp(cell, plotly=True):
 
 def plot_motif_corr(cell):
     fig = Clustergram(
-        data=cell.gene_by_motif.corr,
+        data=cell.gene_by_motif.corr.values,
         column_labels=list(cell.gene_by_motif.corr.columns.values),
         row_labels=list(cell.gene_by_motif.corr.index),
         hidden_labels=["row", "col"],
-        link_method="ward",
+        # link_method="ward",
         display_ratio=0.1,
         width=600,
         height=350,
@@ -149,7 +188,6 @@ if __name__ == "__main__":
         seg_pairs = gr.State([""])
         af = gr.State(None)
         cell = gr.State(None)
-        gene_names = gr.State([""])
 
         gr.Markdown(
             """# 🌟 GET: A Foundation Model of Transcription Across Human Cell Types 🌟
@@ -185,22 +223,10 @@ This section enables you to select different cell types and generates a plot tha
 """
                 )
                 celltype_name = gr.Dropdown(
-                    label="Cell Type", choices=avaliable_celltypes, value='Fetal Astrocyte 1'
+                    label="Cell Type", choices=available_celltypes, value='Fetal Astrocyte 1'
                 )
                 celltype_btn = gr.Button(value="Load & plot gene expression")
                 gene_exp_plot = gr.Plot(label="Gene expression prediction vs observation")
-                with gr.Row() as row:
-                    gene_name = gr.Dropdown(value="BCL11A")
-                    # Button to trigger the filter action
-                    filter_btn = gr.Button("Filter table by gene name")
-                gene_exp_table = gr.Dataframe(
-                    datatype=["str", "number", "number", "number"],
-                    row_count=5,
-                    col_count=(4, "fixed"),
-                    label='Gene expression table',
-                    max_rows=5
-                )
-
 
             # Right column: Plot gene motifs
             with gr.Column():
@@ -211,8 +237,8 @@ This section enables you to select different cell types and generates a plot tha
 In this section, you can choose a specific gene and access visualizations of its cell-type specific regulatory regions and motifs that promote gene expression. When you hover over the highlighted regions (the top 10%), you'll be able to view information about the motifs present in those regions and their corresponding scores. This feature allows for a detailed exploration of the regulatory elements influencing the expression of the selected gene.
 """
                 )
-                gene_name_for_region = gr.Dropdown(
-                    label="Get important regions or motifs for gene:", value="BCL11A"
+                gene_name_for_region = gr.Textbox(
+                    label="Get important regions or motifs for gene:", value="SOX2"
                 )
                 with gr.Row() as row:
                     region_plot_btn = gr.Button(value="Regions")
@@ -291,15 +317,11 @@ You can download specific segment pair PDB files by clicking 'Get PDB.'
                 segpair = gr.Dropdown(label="Seg pair")
                 segpair_btn = gr.Button(value="Get PDB")
                 pdb_html = gr.HTML(label="PDB HTML")
-                pdb_file = gr.File(label="Download PDB")
+                pdb_download = gr.Markdown(label="Download PDB")
 
         with gr.Row() as row:
-            with gr.Column():
-                protein1_plddt = gr.Plot(label="Protein 1 pLDDT")
-                interact_plddt1 = gr.Plot(label="Interact pLDDT 1")
-            with gr.Column():
-                protein2_plddt = gr.Plot(label="Protein 2 pLDDT")
-                interact_plddt2 = gr.Plot(label="Interact pLDDT 2")
+            interact_plddt1 = gr.Plot(label="Interact pLDDT 1")
+            interact_plddt2 = gr.Plot(label="Interact pLDDT 2")
                 
         tf_pairs_btn.click(
             visualize_AF2,
@@ -307,25 +329,18 @@ You can download specific segment pair PDB files by clicking 'Get PDB.'
             outputs=[
                 interact_plddt1,
                 interact_plddt2,
-                protein1_plddt,
-                protein2_plddt,
                 heatmap,
                 segpair,
                 af,
             ],
         )
         segpair_btn.click(
-            view_pdb, inputs=[segpair, af], outputs=[pdb_html, af, pdb_file]
+            view_pdb, inputs=[segpair, af], outputs=[pdb_html, af, pdb_download]
         )
         celltype_btn.click(
             load_and_plot_celltype,
             inputs=[celltype_name, gr.State(GET_CONFIG), cell],
-            outputs=[gene_exp_plot, gene_exp_table, gene_name, gene_name_for_region, cell],
-        )
-        filter_btn.click(
-            filter_gene_records,
-            inputs=[cell, gene_name],
-            outputs=[gene_exp_table, cell],
+            outputs=[gene_exp_plot, cell],
         )
         region_plot_btn.click(
             plot_gene_regions,
@@ -352,4 +367,4 @@ You can download specific segment pair PDB files by clicking 'Get PDB.'
             outputs=[subnet_plot, cell],
         )
 
-    demo.launch(share=args.share, server_port=args.port)
+    demo.launch(server_name=args.host, share=args.share, server_port=args.port)
