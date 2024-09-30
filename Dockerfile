@@ -13,4 +13,4 @@ COPY --chown=$MAMBA_USER:$MAMBA_USER app/main.py /app/app/main.py
 # Set the working directory where your app resides
 
 # Command to run the Gradio app automatically
-CMD ["python", "/app/app/main.py", "-n", "0.0.0.0", "-p", "7860", "-u", "s3://2023-get-xf2217/get_demo_test_data", "-d", "/app/data"]
+CMD ["python", "/app/app/main.py", "-n", "0.0.0.0", "-p", "7860", "-u", "s3://2023-get-xf2217/get_demo", "-d", "/app/data"]
