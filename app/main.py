@@ -1,117 +1,59 @@
-import argparse
-import os
+# Demo app
+from pathlib import Path
 
 import gradio as gr
 import matplotlib.pyplot as plt
 import pandas as pd
-import pkg_resources
-from dash_bio import Clustergram
-import sys
 import s3fs
-from glob import glob
-import numpy as np
+from genomespy import GenomeSpy
 
-from atac_rna_data_processing.config.load_config import load_config
-from atac_rna_data_processing.io.celltype import GETCellType
-from atac_rna_data_processing.io.nr_motif_v1 import NrMotifV1
-from proscope.af2 import GETAFPairseg
-from proscope.data import get_genename_to_uniprot, get_lddt, get_seq
-from proscope.protein import Protein
-from proscope.viewer import view_pdb_html
+from gcell.cell.celltype import GETCellType
+from gcell.config.config import load_config
+from gcell.dna.nr_motif_v1 import NrMotifV1
+from gcell.protein.af2 import AFPairseg
+from gcell.utils.pdb_viewer import view_pdb_html
 
+gs = GenomeSpy()
 
-seq = get_seq()
-genename_to_uniprot = get_genename_to_uniprot()
-lddt = get_lddt()
-
-args = argparse.ArgumentParser()
-args.add_argument("-p", "--port", type=int, default=7860, help="Port number")
-args.add_argument("-s", "--share", action="store_true", help="Share on network")
-args.add_argument("-u", "--s3_uri", type=str, default=None, help="Path to demo S3 bucket")
-args.add_argument("-d", "--data", type=str, default=None, help="Data directory")
-args.add_argument("-n", "--host", type=str, default="127.0.0.1")
-args = args.parse_args()
-
-GET_CONFIG = load_config(
-    "/app/modules/atac_rna_data_processing/atac_rna_data_processing/config/GET"
-)
-GET_CONFIG.celltype.jacob = True
-GET_CONFIG.celltype.num_cls = 2
-GET_CONFIG.celltype.input = True
-GET_CONFIG.celltype.embed = True
+cfg = load_config("s3_interpret")
 plt.rcParams["figure.dpi"] = 100
 
-if args.s3_uri: # Use S3 path if exists
+if cfg.s3_uri:  # Use S3 path if exists
     s3_file_sys = s3fs.S3FileSystem(anon=True)
-    GET_CONFIG.s3_file_sys = s3_file_sys
-    GET_CONFIG.celltype.data_dir = (
-        f"{args.s3_uri}/pretrain_human_bingren_shendure_apr2023/fetal_adult/"
+    cfg.celltype.data_dir = (
+        f"{cfg.s3_uri}/pretrain_human_bingren_shendure_apr2023/fetal_adult/"
     )
-    GET_CONFIG.celltype.interpret_dir = (
-        f"{args.s3_uri}/Interpretation_all_hg38_allembed_v4_natac/"
+    cfg.celltype.interpret_dir = (
+        f"{cfg.s3_uri}/Interpretation_all_hg38_allembed_v4_natac/"
     )
-    GET_CONFIG.motif_dir = f"{args.s3_uri}/interpret_natac/motif-clustering/"
-    GET_CONFIG.assets_dir = f"{args.s3_uri}/assets/"
+    cfg.celltype.motif_dir = f"{cfg.s3_uri}/interpret_natac/motif-clustering/"
+    cfg.celltype.assets_dir = f"{cfg.s3_uri}/assets/"
     cell_type_annot = pd.read_csv(
-        GET_CONFIG.celltype.data_dir.split("fetal_adult")[0]
-            + "data/cell_type_pretrain_human_bingren_shendure_apr2023.txt"
+        cfg.celltype.data_dir.split("fetal_adult")[0]
+        + "data/cell_type_pretrain_human_bingren_shendure_apr2023.txt"
     )
     cell_type_id_to_name = dict(zip(cell_type_annot["id"], cell_type_annot["celltype"]))
     cell_type_name_to_id = dict(zip(cell_type_annot["celltype"], cell_type_annot["id"]))
     available_celltypes = sorted(
         [
             cell_type_id_to_name[f.split("/")[-1]]
-            for f in s3_file_sys.glob(GET_CONFIG.celltype.interpret_dir + "*")
+            for f in s3_file_sys.glob(cfg.celltype.interpret_dir + "*")
         ]
     )
-    gene_pairs = s3_file_sys.glob(f"{args.s3_uri}/structures/causal/*")
-    gene_pairs = [os.path.basename(pair) for pair in gene_pairs]
-    motif = NrMotifV1.load_from_pickle(
-        pkg_resources.resource_filename("atac_rna_data_processing", "data/NrMotifV1.pkl"),
-        GET_CONFIG.motif_dir,
-    )
-else: # Run with local data
-    GET_CONFIG.s3_file_sys = None
-    GET_CONFIG.celltype.data_dir = (
-        f"{args.data}/pretrain_human_bingren_shendure_apr2023/fetal_adult/"
-    )
-    GET_CONFIG.celltype.interpret_dir = (
-        f"{args.data}/Interpretation_all_hg38_allembed_v4_natac/"
-    )
-    GET_CONFIG.motif_dir = f"{args.data}/interpret_natac/motif-clustering/"
-    GET_CONFIG.assets_dir = f"{args.data}/assets/"
-    cell_type_annot = pd.read_csv(
-        GET_CONFIG.celltype.data_dir.split("fetal_adult")[0]
-            + "data/cell_type_pretrain_human_bingren_shendure_apr2023.txt"
-    )
-    cell_type_id_to_name = dict(zip(cell_type_annot["id"], cell_type_annot["celltype"]))
-    cell_type_name_to_id = dict(zip(cell_type_annot["celltype"], cell_type_annot["id"]))
-    available_celltypes = sorted(
-        [
-            cell_type_id_to_name[f.split("/")[-1]]
-            for f in glob(GET_CONFIG.celltype.interpret_dir + "*")
-        ]
-    )
-    gene_pairs = glob(f"{args.data}/structures/causal/*")
-    gene_pairs = [os.path.basename(pair) for pair in gene_pairs]
-    motif = NrMotifV1.load_from_pickle(
-        pkg_resources.resource_filename("atac_rna_data_processing", "data/NrMotifV1.pkl"),
-        GET_CONFIG.motif_dir,
-    )
+    gene_pairs = s3_file_sys.glob(f"{cfg.s3_uri}/structures/causal/*")
+    gene_pairs = [Path(pair).name for pair in gene_pairs]
+    motif = NrMotifV1.load_from_pickle()
+else:
+    raise ValueError("S3 URI is required")
+
 
 def visualize_AF2(tf_pair, a):
-    if args.s3_uri:
-        strcture_dir = f"{args.s3_uri}/structures/causal/{tf_pair}"
-        fasta_dir = f"{args.s3_uri}/sequences/causal/{tf_pair}"
-    else:
-        strcture_dir = f"{args.data}/structures/causal/{tf_pair}"
-        fasta_dir = f"{args.data}/sequences/causal/{tf_pair}"
-
-        if not os.path.exists(strcture_dir):
-            gr.ErrorText("No such gene pair")
-
-    a = GETAFPairseg(strcture_dir, fasta_dir, GET_CONFIG)
-    # segpair.choices = list(a.pairs_data.keys())
+    """
+    Visualize the AlphaFold2 structure of a transcription factor pair.
+    """
+    strcture_dir = f"{cfg.s3_uri}/structures/causal/{tf_pair}"
+    fasta_dir = f"{cfg.s3_uri}/sequences/causal/{tf_pair}"
+    a = AFPairseg(strcture_dir, fasta_dir, s3_file_sys=s3_file_sys)
     fig1 = a.plotly_plddt_gene1()
     fig2 = a.plotly_plddt_gene2()
     fig5, ax5 = a.plot_score_heatmap()
@@ -121,9 +63,12 @@ def visualize_AF2(tf_pair, a):
 
 
 def view_pdb(seg_pair, a):
+    """
+    View the PDB file of a transcription factor pair.
+    """
     pdb_path = a.pairs_data[seg_pair].pdb
-    if args.s3_uri:
-        bucket_name = f"{args.s3_uri}".split("//")[1].split("/")[0]
+    if cfg.s3_uri:
+        bucket_name = f"{cfg.s3_uri}".split("//")[1].split("/")[0]
         path_in_bucket = pdb_path.split("/", 1)[1]
         file_name = pdb_path.split("/")[-1]
         output_path = f"https://{bucket_name}.s3.amazonaws.com/{path_in_bucket}"
@@ -131,56 +76,60 @@ def view_pdb(seg_pair, a):
         ### Download PDB
         [{file_name}]({output_path})
         """
-    else: # No download link if running locally
+    else:  # No download link if running locally
         output_text = ""
-    return view_pdb_html(pdb_path, s3_file_sys=GET_CONFIG.s3_file_sys), a, output_text
+    return view_pdb_html(pdb_path, s3_file_sys=s3_file_sys), a, output_text
 
 
 def update_dropdown(x, label):
-    return gr.Dropdown.update(choices=x, label=label)
+    """
+    Update the dropdown menu.
+    """
+    return gr.Dropdown(choices=x, label=label, interactive=True)
 
 
-def load_and_plot_celltype(celltype_name, GET_CONFIG, cell):
+def load_and_plot_celltype(celltype_name, GET_CONFIG, cell, s3_file_sys=s3_file_sys):
+    """
+    Load and plot the gene expression of a cell type.
+    """
     celltype_id = cell_type_name_to_id[celltype_name]
-    cell = GETCellType(celltype_id, GET_CONFIG)
+    cell = GETCellType(celltype_id, GET_CONFIG, s3_file_sys=s3_file_sys)
     cell.celltype_name = celltype_name
     gene_exp_fig = cell.plotly_gene_exp()
     return gene_exp_fig, cell
 
 
-def plot_gene_regions(cell, gene_name, plotly=True):
+def plot_gene_regions(cell, gene_name, plotly: bool = True):
+    """
+    Plot the important regions of a gene.
+    """
     return cell.plot_gene_regions(gene_name, plotly=plotly), cell
 
 
-def plot_gene_motifs(cell, gene_name, motif, overwrite=False):
+def plot_gene_motifs(cell, gene_name, motif, overwrite: bool = False):
+    """
+    Plot the gene motifs of a gene.
+    """
     return cell.plot_gene_motifs(gene_name, motif, overwrite=overwrite)[0], cell
 
 
-def plot_motif_subnet(cell, motif_collection, m, type="neighbors", threshold=0.1):
+def plot_motif_subnet(
+    cell, motif_collection, m, type: str = "neighbors", threshold: float = 0.1
+):
+    """
+    Plot the motif subnet of a motif.
+    """
     return (
         cell.plotly_motif_subnet(motif_collection, m, type=type, threshold=threshold),
         cell,
     )
 
 
-def plot_gene_exp(cell, plotly=True):
+def plot_gene_exp(cell, plotly: bool = True):
+    """
+    Plot the gene expression of a cell type.
+    """
     return cell.plotly_gene_exp(plotly=plotly), cell
-
-
-def plot_motif_corr(cell):
-    fig = Clustergram(
-        data=cell.gene_by_motif.corr.values,
-        column_labels=list(cell.gene_by_motif.corr.columns.values),
-        row_labels=list(cell.gene_by_motif.corr.index),
-        hidden_labels=["row", "col"],
-        # link_method="ward",
-        display_ratio=0.1,
-        width=600,
-        height=350,
-        color_map="rdbu_r",
-    )
-    fig["layout"].update(coloraxis_showscale=False)
-    return fig, cell
 
 
 if __name__ == "__main__":
@@ -190,25 +139,13 @@ if __name__ == "__main__":
         cell = gr.State(None)
 
         gr.Markdown(
-            """# 🌟 GET: A Foundation Model of Transcription Across Human Cell Types 🌟
+            """# A Foundation Model of Transcription Across Human Cell Types
+            This is a demo of the results of the GET model.
 
-Here we introduce GET, an innovative computational model aimed at understanding transcriptional regulation across 213 human fetal and adult cell types. 
-Built solely on chromatin accessibility and sequence data, GET exhibits unparalleled generalizability and accuracy in predicting gene expression, even in previously unstudied cell types. 
-The model adapts seamlessly across various sequencing platforms and assays, allowing inference of broad-spectrum regulatory activity. 
-We validate GET's efficacy through its superior prediction of lentivirus-based massive parallel reporter assay outcomes and its ability to identify previously elusive distant regulatory regions in fetal erythroblasts. 
-Moreover, our model reveals both universal and cell type-specific transcription factor interaction networks. 
-Utilizing this comprehensive catalog, we elucidate the functional significance of a previously unidentified germline coding variant in PAX5, a lymphoma-associated transcription factor. 
-Overall, GET serves as a robust, generalizable framework for understanding cell type-specific gene regulation and transcription factor interactions.
+            Checkout our [paper](https://www.nature.com/articles/s41586-024-08391-z), [model package](https://github.com/GET-Foundation/get_model)
+            and [analysis package](https://github.com/GET-Foundation/gcell) for more details.
 
-Dive deep into our live demo and experience a revolution in cellular transcription like never before. Here's what you can explore:
-
-- 🔍 Prediction Performance: Choose your cell type and be amazed as we unveil a vivid plot comparing observed versus forecasted gene expression levels.
-- 🧬 Cell-type Specific Regulatory Insights: Just pick a gene, and voilà! Revel in intricate plots revealing the cell-type specific regulatory landscapes and motifs.
-- 🔗 Motif Correlation & Causal Subnetworks: Engage with our intuitive heatmap to witness motif correlations. Go further - choose a motif, define your subnetwork preference, set an effect size threshold, and behold the magic unfold!
-- 🔬 Structural Atlas of Interactions: Step into the realm of transcription factor pairs. Experience heatmaps, pLDDT metrics, and more. And guess what? You can even download the PDB file for select segment pairs!
-
-Stay tuned! We're set to dazzle you further as we launch our demo on Huggingface this week. Questions, thoughts, or moments of awe? Don't hesitate to reach out!
-        
+            Pretrained models, training data, infered structures and regulatory information are hosted on a public [S3 bucket](s3://2023-get-xf2217/get_demo)
         """
         )
 
@@ -219,22 +156,33 @@ Stay tuned! We're set to dazzle you further as we launch our demo on Huggingface
                     """
 ## 🔍 Prediction performance
 
-This section enables you to select different cell types and generates a plot that compares observed gene expression levels to predicted ones. It's important to note that for cell types without available observed gene expression data, the plot will display a vertical line at 0, indicating the absence of empirical expression data for those particular cell types. This visualization helps assess the accuracy of gene expression predictions in the context of different cell types.
+This section enables you to select different cell types and generates a plot that compares observed
+gene expression levels to predicted ones. It's important to note that for cell types without available
+observed gene expression data, the plot will display a vertical line at 0, indicating the absence of
+empirical expression data for those particular cell types. This visualization helps assess the accuracy
+of gene expression predictions in the context of different cell types.
 """
                 )
                 celltype_name = gr.Dropdown(
-                    label="Cell Type", choices=available_celltypes, value='Fetal Astrocyte 1'
+                    label="Cell Type",
+                    choices=available_celltypes,
+                    value="Fetal Astrocyte 1",
                 )
                 celltype_btn = gr.Button(value="Load & plot gene expression")
-                gene_exp_plot = gr.Plot(label="Gene expression prediction vs observation")
+                gene_exp_plot = gr.Plot(
+                    label="Gene expression prediction vs observation"
+                )
 
             # Right column: Plot gene motifs
             with gr.Column():
                 gr.Markdown(
                     """
-### 🧬 Cell-type specific regulatory inference
+## 🧬 Cell-type specific regulatory inference
 
-In this section, you can choose a specific gene and access visualizations of its cell-type specific regulatory regions and motifs that promote gene expression. When you hover over the highlighted regions (the top 10%), you'll be able to view information about the motifs present in those regions and their corresponding scores. This feature allows for a detailed exploration of the regulatory elements influencing the expression of the selected gene.
+In this section, you can choose a specific gene and access visualizations of its cell-type specific regulatory
+regions and motifs that promote gene expression. When you hover over the highlighted regions (the top 10%),
+you'll be able to view information about the motifs present in those regions and their corresponding scores.
+This feature allows for a detailed exploration of the regulatory elements influencing the expression of the selected gene.
 """
                 )
                 gene_name_for_region = gr.Textbox(
@@ -249,54 +197,42 @@ In this section, you can choose a specific gene and access visualizations of its
 
         gr.Markdown(
             """
-## 🔗 Motif correlation and causal subnetworks
-
-Motif correlation, as it relates to a cell-type specific gene-by-motif matrix, signifies the examination of associations between specific DNA sequence motifs and the expression patterns of genes in a particular cell type. This analysis is grounded in the concept that a correlation between a motif and gene expression implies co-regulation of downstream target genes, suggesting functional interactions between the regulatory motif and the genes it influences.
-
-In simpler terms, when you observe a motif having a strong positive correlation with the expression of certain genes in a specific cell type, it suggests that this motif is associated with the coordinated regulation of those genes. This correlation indicates that the motif likely plays a role in controlling the activity of those genes, possibly by acting as a binding site for transcription factors or other regulatory proteins. Conversely, a negative correlation might suggest that the motif is associated with the repression of those genes.
-
-Overall, motif correlation analysis helps uncover potential regulatory relationships within a cell type by identifying motifs that are statistically linked to the expression patterns of genes. This can provide valuable insights into the functional interactions and regulatory mechanisms at play in that specific biological context.
+## 🔗 Causal discovery on motif-motif interactions
+This section allows you to explore the inferred (using [LiNGAM](https://jmlr.org/papers/volume7/shimizu06a/shimizu06a.pdf))
+relationships between motifs in the selected cell type.
 """
         )
-        with gr.Row() as row:
-            with gr.Column():
-                clustergram_btn = gr.Button(value="Plot motif correlation heatmap")
-                clustergram_plot = gr.Plot(label="Motif correlation")
 
-            # Right column: Motif subnet plot
-            with gr.Column():
-                with gr.Row() as row:
-                    motif_for_subnet = gr.Dropdown(
-                        label="Motif causal subnetwork", choices=motif.cluster_names, value='KLF/SP/2'
-                    )
-                    subnet_type = gr.Dropdown(
-                        label="Interaction type",
-                        choices=["neighbors", "parents", "children"],
-                        value="neighbors",
-                    )
-                    # slider for threshold 0.01-0.2
-                    subnet_threshold = gr.Slider(
-                        label="Threshold",
-                        minimum=0.01,
-                        maximum=0.25,
-                        step=0.01,
-                        value=0.1,
-                    )
-                subnet_btn = gr.Button(value="Plot Motif Causal Subnetwork")
-                subnet_plot = gr.Plot(label="Motif Causal Subnetwork")
+        with gr.Row() as row:
+            motif_for_subnet = gr.Dropdown(
+                label="Motif causal subnetwork",
+                choices=motif.cluster_names,
+                value="KLF/SP/2",
+            )
+            subnet_type = gr.Dropdown(
+                label="Interaction type",
+                choices=["neighbors", "parents", "children"],
+                value="neighbors",
+            )
+            # slider for threshold 0.01-0.2
+            subnet_threshold = gr.Slider(
+                label="Threshold",
+                minimum=0.01,
+                maximum=0.25,
+                step=0.01,
+                value=0.1,
+            )
+        subnet_btn = gr.Button(value="Plot Motif Causal Subnetwork")
+        subnet_plot = gr.Plot(label="Motif Causal Subnetwork")
 
         gr.Markdown(
             """
 ## 🔬 Structural atlas of TF-TF and TF-EP300 interactions
 
 This section allows you to explore transcription factor pairs within a causal network. You can visualize metrics like Heatmaps and pLDDT (predicted Local Distance Difference Test) for both proteins in the pair.
-
 The first row displays the pLDDT segmentation plot for the two TFs, helping to identify protein disorder regions. Each TF is divided into disordered and ordered segments labeled numerically as ZFX_0, ZFX_1, etc., with disordered segments marked in red. Uniprot annotations are included if available.
-
 The second row shows the interaction pLDDT plot. It compares pLDDT scores between segment pairs from AlphaFold2 predictions, indicating regions stabilized by TF interactions.
-
 The third row presents a heatmap plot, including:
-
 - *Interchain min pAE*: lower scores indicate stronger protein-protein interactions.
 - *Mean pLDDT*: higher scores signify greater prediction confidence or (inverse-)disorderness.
 - *ipTM*: higher scores reflect better predicted interaction quality by AlphaFold2.
@@ -306,13 +242,12 @@ You can download specific segment pair PDB files by clicking 'Get PDB.'
 """
         )
 
-
         with gr.Row() as row:
             with gr.Column():
                 tf_pairs = gr.Dropdown(label="TF pair", choices=gene_pairs)
                 tf_pairs_btn = gr.Button(value="Load & Plot")
                 heatmap = gr.Plot(label="Heatmap")
-                
+
             with gr.Column():
                 segpair = gr.Dropdown(label="Seg pair")
                 segpair_btn = gr.Button(value="Get PDB")
@@ -321,8 +256,10 @@ You can download specific segment pair PDB files by clicking 'Get PDB.'
 
         with gr.Row() as row:
             interact_plddt1 = gr.Plot(label="Interact pLDDT 1")
+
+        with gr.Row() as row:
             interact_plddt2 = gr.Plot(label="Interact pLDDT 2")
-                
+
         tf_pairs_btn.click(
             visualize_AF2,
             inputs=[tf_pairs, af],
@@ -339,7 +276,7 @@ You can download specific segment pair PDB files by clicking 'Get PDB.'
         )
         celltype_btn.click(
             load_and_plot_celltype,
-            inputs=[celltype_name, gr.State(GET_CONFIG), cell],
+            inputs=[celltype_name, gr.State(cfg), cell],
             outputs=[gene_exp_plot, cell],
         )
         region_plot_btn.click(
@@ -352,9 +289,7 @@ You can download specific segment pair PDB files by clicking 'Get PDB.'
             inputs=[cell, gene_name_for_region, gr.State(motif)],
             outputs=[motif_plot, cell],
         )
-        clustergram_btn.click(
-            plot_motif_corr, inputs=[cell], outputs=[clustergram_plot, cell]
-        )
+
         subnet_btn.click(
             plot_motif_subnet,
             inputs=[
@@ -367,4 +302,4 @@ You can download specific segment pair PDB files by clicking 'Get PDB.'
             outputs=[subnet_plot, cell],
         )
 
-    demo.launch(server_name=args.host, share=args.share, server_port=args.port)
+    demo.launch(server_name=cfg.host, share=cfg.share, server_port=cfg.port)
