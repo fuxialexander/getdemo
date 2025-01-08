@@ -1,17 +1,25 @@
 # Demo app
 from pathlib import Path
 
+SETTINGS = {
+    "annotation_dir": str(Path("/app/.gcell_data") / "annotations"),
+    "genome_dir": str(Path("/app/.gcell_data") / "genomes"),
+    "cache_dir": str(Path("/app/.gcell_data") / "cache"),
+}
+
+from gcell._settings import update_settings
+
+update_settings(SETTINGS)
 import gradio as gr
 import matplotlib.pyplot as plt
 import pandas as pd
 import s3fs
-from genomespy import GenomeSpy
-
 from gcell.cell.celltype import GETCellType
 from gcell.config.config import load_config
 from gcell.dna.nr_motif_v1 import NrMotifV1
 from gcell.protein.af2 import AFPairseg
 from gcell.utils.pdb_viewer import view_pdb_html
+from genomespy import GenomeSpy
 
 gs = GenomeSpy()
 
