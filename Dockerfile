@@ -23,6 +23,10 @@ USER root
 RUN mkdir -p /app/matplotlib_cache && chown $MAMBA_USER:$MAMBA_USER /app/matplotlib_cache
 RUN mkdir -p /app/.gcell_data && chown $MAMBA_USER:$MAMBA_USER /app/.gcell_data
 # set the permission of the directory to 777
+RUN mkdir -p /app/.gcell_data/genomes && chown $MAMBA_USER:$MAMBA_USER /app/.gcell_data/genomes
+# skip the genome download
+RUN touch /app/.gcell_data/genomes/hg38.fa
+RUN touch /app/.gcell_data/genomes/hg38.fa.fai
 RUN chmod -R 777 /app/.gcell_data
 RUN chmod -R 777 /app/matplotlib_cache
 RUN chmod -R 777 /app/
