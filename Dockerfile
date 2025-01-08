@@ -21,10 +21,6 @@ ENV MPLCONFIGDIR=/app/matplotlib_cache
 # Create the directory for Matplotlib cache
 USER root
 RUN mkdir -p /app/matplotlib_cache && chown $MAMBA_USER:$MAMBA_USER /app/matplotlib_cache
-RUN mkdir -p /app/.gcell_data && chown $MAMBA_USER:$MAMBA_USER /app/.gcell_data
-# set the permission of the directory to 777
-RUN mkdir -p /app/.gcell_data/genomes && chown $MAMBA_USER:$MAMBA_USER /app/.gcell_data/genomes
-# skip the genome download
 # download https://zenodo.org/records/14615146/files/gcell_data.tar.gz?download=1 extract it and copy it to /app/.gcell_data
 RUN wget https://zenodo.org/records/14615146/files/gcell_data.tar.gz?download=1 -O /app/gcell_data.tar.gz
 RUN tar -xzvf /app/gcell_data.tar.gz -C /app/.gcell_data
