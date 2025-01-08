@@ -4,7 +4,12 @@ FROM fuxialexander/get_model:latest
 # Set the working directory in the container to /app
 WORKDIR /app
 
+
+# use MAMBA_USER to run the container
+USER $MAMBA_USER
+
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
+
 
 # copy modules from local to container
 COPY --chown=$MAMBA_USER:$MAMBA_USER app/main.py /app/main.py
