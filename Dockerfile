@@ -1,16 +1,27 @@
-# This is the dockerfile for the Gradio app on huggingface
-FROM fuxialexander/getdemo:latest
+# This is the dockerfile for dockerhub fuxialexander/getdemo:latest
+FROM fuxialexander/get_model:latest
 
-# Switch to mambauser with updated UID
+
+USER root
+RUN usermod -u 1000 $MAMBA_USER
 USER $MAMBA_USER
+
 # Set the working directory in the container to /app
 WORKDIR /app
 
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
 
-COPY --chown=$MAMBA_USER:$MAMBA_USER app/main.py /app/app/main.py
+USER $MAMBA_USER
 
+# copy modules from local to container
+COPY --chown=$MAMBA_USER:$MAMBA_USER app/main.py /app/main.py
+
+# clean all mamba caches and remove unnecessary files
+RUN micromamba clean --all --yes
+
+# Make port 80 available to the world outside this container
+EXPOSE 7860
 # Set the working directory where your app resides
 
 # Command to run the Gradio app automatically
-CMD ["python", "/app/app/main.py", "-n", "0.0.0.0", "-p", "7860", "-u", "s3://2023-get-xf2217/get_demo", "-d", "/app/data"]
+CMD ["python", "main.py"]
