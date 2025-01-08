@@ -310,4 +310,4 @@ You can download specific segment pair PDB files by clicking 'Get PDB.'
             outputs=[subnet_plot, cell],
         )
 
-    demo.launch(server_name=cfg.host, share=cfg.share, server_port=cfg.port)
+    demo.launch(server_name='0.0.0.0', share=cfg.share, server_port=cfg.port)
